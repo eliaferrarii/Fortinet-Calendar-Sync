@@ -275,48 +275,18 @@ def api_zoho_logout():
         logger.error(f"Error during Zoho logout: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/zoho/authorize')
-def api_zoho_authorize():
-    """Redirect user to Zoho OAuth consent page"""
-    config = get_config()
-    zoho_cfg = config.get('zoho', {})
-    client_id = zoho_cfg.get('client_id', '')
-    dc = zoho_cfg.get('dc', 'eu')
-
-    if not client_id:
-        return "Salva prima il Client ID nella configurazione", 400
-
-    # Build redirect URI from current request
-    redirect_uri = request.args.get('redirect_uri', '')
-    if not redirect_uri:
-        return "redirect_uri mancante", 400
-
-    scope = 'ZohoCreator.form.CREATE,ZohoCreator.report.READ'
-    params = urlencode({
-        'response_type': 'code',
-        'client_id': client_id,
-        'scope': scope,
-        'redirect_uri': redirect_uri,
-        'access_type': 'offline',
-        'prompt': 'consent',
-    })
-    auth_url = f'https://accounts.zoho.{dc}/oauth/v2/auth?{params}'
-    logger.info(f"Redirecting to Zoho OAuth: dc={dc}, client_id={client_id[:8]}...")
-    return redirect(auth_url)
-
 @app.route('/auth/callback')
 def auth_callback():
-    """Handle Zoho OAuth callback"""
-    ingress_path = request.headers.get('X-Ingress-Path', '')
+    """Handle Zoho OAuth callback - opens in new tab"""
     code = request.args.get('code', '').strip()
     error = request.args.get('error', '')
 
     if error:
         logger.error(f"Zoho OAuth error: {error}")
-        return redirect(f'{ingress_path}/setup?auth_error={error}')
+        return f"<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Errore: {error}</h2><p>Puoi chiudere questa finestra.</p></body></html>"
 
     if not code:
-        return redirect(f'{ingress_path}/setup?auth_error=no_code')
+        return "<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Nessun codice ricevuto</h2><p>Puoi chiudere questa finestra.</p></body></html>"
 
     try:
         config = get_config()
@@ -325,7 +295,7 @@ def auth_callback():
         client_secret = zoho_cfg.get('client_secret', '')
         dc = zoho_cfg.get('dc', 'eu')
 
-        # Build the same redirect_uri used for authorization
+        # Rebuild redirect_uri from current request URL (without query params)
         redirect_uri = request.url.split('?')[0]
 
         logger.info(f"Exchanging Zoho code with dc={dc}, redirect_uri={redirect_uri}")
@@ -340,17 +310,17 @@ def auth_callback():
         }, timeout=15)
 
         data = resp.json()
-        logger.info(f"Zoho token response: {json.dumps({k: v for k, v in data.items() if k != 'access_token' and k != 'refresh_token'})}")
+        logger.info(f"Zoho token response keys: {list(data.keys())}")
 
         if 'error' in data:
             logger.error(f"Zoho token error: {data}")
-            return redirect(f'{ingress_path}/setup?auth_error={data.get("error", "unknown")}')
+            return f"<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Errore: {data.get('error')}</h2><p>Puoi chiudere questa finestra e riprovare.</p></body></html>"
 
         refresh_token = data.get('refresh_token', '')
         access_token = data.get('access_token', '')
 
         if not refresh_token:
-            return redirect(f'{ingress_path}/setup?auth_error=no_refresh_token')
+            return "<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Nessun refresh token ricevuto</h2><p>Puoi chiudere questa finestra e riprovare.</p></body></html>"
 
         os.makedirs(os.path.dirname(REFRESH_TOKEN_PATH), exist_ok=True)
         with open(REFRESH_TOKEN_PATH, 'w') as f:
@@ -365,10 +335,10 @@ def auth_callback():
         sync_manager = None
 
         logger.info("Zoho OAuth completed successfully")
-        return redirect(f'{ingress_path}/setup?auth_success=1')
+        return "<html><body style='background:#1a1a2e;color:#2ed573;font-family:sans-serif;padding:40px;text-align:center;'><h2>Autorizzazione completata!</h2><p>Puoi chiudere questa finestra e tornare al Setup.</p><script>setTimeout(function(){window.close();},3000);</script></body></html>"
     except Exception as e:
         logger.error(f"Error in OAuth callback: {e}")
-        return redirect(f'{ingress_path}/setup?auth_error={e}')
+        return f"<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Errore: {e}</h2><p>Puoi chiudere questa finestra.</p></body></html>"
 
 @app.route('/api/devices')
 def api_devices():

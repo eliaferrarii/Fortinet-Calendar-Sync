@@ -473,19 +473,43 @@
         }
 
         function startZohoAuth() {
-            const redirectUri = getRedirectUri();
-            window.location.href = INGRESS_PATH + '/api/zoho/authorize?redirect_uri=' + encodeURIComponent(redirectUri);
-        }
+            const clientId = document.getElementById('zoho_client_id').value.trim();
+            const dc = document.getElementById('zoho_dc').value;
 
-        function checkAuthResult() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('auth_success')) {
-                showMessage('Autorizzazione Zoho completata!', 'success');
-                history.replaceState(null, '', window.location.pathname);
-            } else if (params.get('auth_error')) {
-                showMessage('Errore autorizzazione: ' + params.get('auth_error'), 'error');
-                history.replaceState(null, '', window.location.pathname);
+            if (!clientId) {
+                showMessage('Inserisci il Client ID prima di autorizzare', 'error');
+                return;
             }
+
+            const redirectUri = getRedirectUri();
+            const scope = 'ZohoCreator.form.CREATE,ZohoCreator.report.READ';
+            const params = new URLSearchParams({
+                response_type: 'code',
+                client_id: clientId,
+                scope: scope,
+                redirect_uri: redirectUri,
+                access_type: 'offline',
+                prompt: 'consent'
+            });
+            const authUrl = 'https://accounts.zoho.' + dc + '/oauth/v2/auth?' + params.toString();
+            window.open(authUrl, '_blank');
+
+            // Poll auth status while user is on Zoho
+            const poll = setInterval(() => {
+                fetch(INGRESS_PATH + '/api/zoho/auth-status')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.authorized) {
+                            clearInterval(poll);
+                            showMessage('Autorizzazione Zoho completata!', 'success');
+                            checkZohoAuth();
+                        }
+                    })
+                    .catch(() => {});
+            }, 3000);
+
+            // Stop polling after 5 minutes
+            setTimeout(() => clearInterval(poll), 300000);
         }
 
         // Show redirect URI to copy into Zoho API Console
@@ -493,7 +517,6 @@
 
         loadConfig();
         checkZohoAuth();
-        checkAuthResult();
     </script>
 </body>
 </html>
