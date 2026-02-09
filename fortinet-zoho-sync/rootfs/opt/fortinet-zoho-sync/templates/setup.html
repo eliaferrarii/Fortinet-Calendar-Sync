@@ -139,49 +139,49 @@
         <div id="message" class="message"></div>
 
         <div class="card">
-            <h2>Zoho - Credenziali API</h2>
-            <div class="note" style="margin-bottom:10px;">Credenziali OAuth dalla <strong>Zoho API Console</strong> (Self Client).</div>
-            <div class="grid">
-                <div>
-                    <label for="zoho_dc">Data Center</label>
-                    <select id="zoho_dc">
-                        <option value="eu">eu</option>
-                        <option value="com">com</option>
-                        <option value="in">in</option>
-                        <option value="au">au</option>
-                        <option value="jp">jp</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="zoho_client_id">Client ID</label>
-                    <input id="zoho_client_id" type="text" placeholder="Client ID Zoho">
-                </div>
-                <div>
-                    <label for="zoho_client_secret">Client Secret</label>
-                    <input id="zoho_client_secret" type="password" placeholder="Client Secret Zoho">
-                </div>
-            </div>
-        </div>
+            <h2>Zoho - Connessione</h2>
 
-        <div class="card">
-            <h2>Zoho - Autorizzazione</h2>
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
                 <div id="zohoAuthStatus" style="padding:10px; border-radius:5px; font-weight:bold; flex:1;"></div>
                 <button id="zohoLogoutBtn" type="button" style="display:none; background:#ff4757; color:white;" onclick="zohoLogout()">Disconnetti</button>
             </div>
+
             <div id="zohoAuthForm">
-                <div class="note" style="margin-bottom:12px;">
-                    <p style="margin-bottom:8px;">Salva prima le credenziali, poi autorizza:</p>
+                <div class="note" style="margin-bottom:14px;">
+                    <p style="margin-bottom:8px;">Per collegare Zoho:</p>
                     <ol style="padding-left:20px; line-height:1.8;">
-                        <li>Vai su <strong>https://api-console.zoho.eu/</strong> e seleziona il tuo Self Client</li>
-                        <li>In <strong>Scope</strong>, incolla: <code style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;">ZohoCreator.form.CREATE,ZohoCreator.report.READ</code></li>
-                        <li>Imposta la durata e clicca <strong>Create</strong></li>
-                        <li>Copia il codice generato e incollalo qui sotto</li>
+                        <li>Vai su <strong>https://api-console.zoho.eu/</strong> e seleziona il tuo <strong>Self Client</strong></li>
+                        <li>Copia <strong>Client ID</strong> e <strong>Client Secret</strong> visibili in alto nella pagina e incollali qui sotto</li>
+                        <li>Clicca <strong>"Salva configurazione"</strong> in fondo alla pagina</li>
+                        <li>Nella tab <strong>Generate Code</strong>, in Scope incolla: <code style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;">ZohoCreator.form.CREATE,ZohoCreator.report.READ</code></li>
+                        <li>Imposta la durata, clicca <strong>Create</strong>, copia il codice generato e incollalo qui sotto</li>
                     </ol>
                 </div>
+
+                <div class="grid" style="margin-bottom:14px;">
+                    <div>
+                        <label for="zoho_dc">Data Center</label>
+                        <select id="zoho_dc">
+                            <option value="eu">eu</option>
+                            <option value="com">com</option>
+                            <option value="in">in</option>
+                            <option value="au">au</option>
+                            <option value="jp">jp</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="zoho_client_id">Client ID</label>
+                        <input id="zoho_client_id" type="text" placeholder="Client ID dalla API Console">
+                    </div>
+                    <div>
+                        <label for="zoho_client_secret">Client Secret</label>
+                        <input id="zoho_client_secret" type="password" placeholder="Client Secret dalla API Console">
+                    </div>
+                </div>
+
                 <div class="row" style="gap:10px;">
-                    <input id="zoho_auth_code" type="text" placeholder="Incolla qui il codice di autorizzazione" style="flex:1;">
-                    <button type="button" onclick="exchangeZohoCode()">Scambia Codice</button>
+                    <input id="zoho_auth_code" type="text" placeholder="Incolla qui il codice generato" style="flex:1;">
+                    <button type="button" onclick="exchangeZohoCode()">Autorizza</button>
                 </div>
             </div>
         </div>
