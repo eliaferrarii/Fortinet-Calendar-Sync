@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.3] - 2026-02-09
+
+### Fixed
+- Repository structure aligned to standard add-on layout
+- Removed `webui` to avoid ingress URL issues
+
 ## [1.0.0] - 2026-02-08
 
 ### Added
