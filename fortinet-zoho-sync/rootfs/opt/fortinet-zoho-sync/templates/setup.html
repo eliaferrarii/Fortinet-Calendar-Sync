@@ -474,15 +474,23 @@
 
         function exchangeZohoCode() {
             const code = document.getElementById('zoho_auth_code').value.trim();
+            const client_id = document.getElementById('zoho_client_id').value.trim();
+            const client_secret = document.getElementById('zoho_client_secret').value.trim();
+            const dc = document.getElementById('zoho_dc').value;
+
             if (!code) {
                 showMessage('Inserisci il codice di autorizzazione', 'error');
+                return;
+            }
+            if (!client_id || !client_secret) {
+                showMessage('Inserisci Client ID e Client Secret prima di autorizzare', 'error');
                 return;
             }
 
             fetch(INGRESS_PATH + '/api/zoho/exchange-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code })
+                body: JSON.stringify({ code: code, client_id: client_id, client_secret: client_secret, dc: dc })
             })
                 .then(r => r.json())
                 .then(res => {

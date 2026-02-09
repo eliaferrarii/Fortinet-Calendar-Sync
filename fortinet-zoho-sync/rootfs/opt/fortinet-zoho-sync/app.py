@@ -283,14 +283,25 @@ def api_zoho_exchange_code():
         if not code:
             return jsonify({'success': False, 'error': 'Codice mancante'}), 400
 
-        config = get_config()
-        zoho_cfg = config.get('zoho', {})
-        client_id = zoho_cfg.get('client_id')
-        client_secret = zoho_cfg.get('client_secret')
-        dc = zoho_cfg.get('dc', 'eu')
+        # Use credentials from payload first, fall back to saved config
+        client_id = (payload.get('client_id') or '').strip()
+        client_secret = (payload.get('client_secret') or '').strip()
+        dc = (payload.get('dc') or '').strip()
 
         if not client_id or not client_secret:
-            return jsonify({'success': False, 'error': 'Salva prima Client ID e Client Secret nella sezione Zoho'}), 400
+            config = get_config()
+            zoho_cfg = config.get('zoho', {})
+            client_id = client_id or zoho_cfg.get('client_id', '')
+            client_secret = client_secret or zoho_cfg.get('client_secret', '')
+            dc = dc or zoho_cfg.get('dc', 'eu')
+
+        if not dc:
+            dc = 'eu'
+
+        if not client_id or not client_secret:
+            return jsonify({'success': False, 'error': 'Client ID e Client Secret sono richiesti'}), 400
+
+        logger.info(f"Exchanging Zoho code with dc={dc}, client_id={client_id[:8]}...")
 
         token_url = f'https://accounts.zoho.{dc}/oauth/v2/token'
         resp = http_requests.post(token_url, data={
