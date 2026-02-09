@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1] - 2026-02-09
+
+### Fixed
+- Mascheramento credenziali nei log di avvio
+- Pagina Setup per configurazione guidata
+
 ## [1.0.0] - 2026-02-08
 
 ### Added
