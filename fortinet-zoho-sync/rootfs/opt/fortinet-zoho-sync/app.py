@@ -22,6 +22,12 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
+@app.context_processor
+def inject_ingress_path():
+    """Inject ingress path into all templates for HA ingress support"""
+    from flask import request as req
+    return {'ingress_path': req.headers.get('X-Ingress-Path', '')}
+
 # Initialize sync manager
 sync_manager = None
 OPTIONS_PATH = '/data/options.json'

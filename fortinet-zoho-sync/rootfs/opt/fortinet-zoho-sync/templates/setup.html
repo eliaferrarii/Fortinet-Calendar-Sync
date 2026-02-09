@@ -132,7 +132,7 @@
         <header>
             <h1>Setup Fortinet Zoho Sync</h1>
             <div>
-                <button class="secondary" onclick="window.location.href='/'">Torna alla Dashboard</button>
+                <button class="secondary" onclick="window.location.href='{{ ingress_path }}/'">Torna alla Dashboard</button>
             </div>
         </header>
 
@@ -273,6 +273,8 @@
     </div>
 
     <script>
+        const INGRESS_PATH = '{{ ingress_path }}';
+
         function showMessage(msg, type) {
             const el = document.getElementById('message');
             el.textContent = msg;
@@ -314,7 +316,7 @@
         }
 
         function loadConfig() {
-            fetch('/api/config')
+            fetch(INGRESS_PATH + '/api/config')
                 .then(r => r.json())
                 .then(cfg => {
                     document.getElementById('filter_days_min').value = cfg.filter_days_min || 1;
@@ -384,7 +386,7 @@
                 }
             };
 
-            fetch('/api/setup', {
+            fetch(INGRESS_PATH + '/api/setup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -394,7 +396,7 @@
                     if (res.success) {
                         showMessage('Configurazione salvata. Reindirizzo...', 'success');
                         setTimeout(() => {
-                            window.location.href = '/';
+                            window.location.href = INGRESS_PATH + '/';
                         }, 1000);
                     } else {
                         showMessage('Errore: ' + res.error, 'error');

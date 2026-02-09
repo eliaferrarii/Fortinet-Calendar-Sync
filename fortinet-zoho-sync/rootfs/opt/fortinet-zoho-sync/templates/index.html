@@ -209,7 +209,7 @@
         <header>
             <h1>🛡️ Fortinet Scadenze</h1>
             <div class="header-actions">
-                <button onclick="window.location.href='/setup'">Setup</button>
+                <button onclick="window.location.href='{{ ingress_path }}/setup'">Setup</button>
                 <button onclick="refreshData()">🔄 Aggiorna</button>
                 <button onclick="syncNow()" id="syncBtn">📅 Sincronizza</button>
             </div>
@@ -242,6 +242,8 @@
     </div>
 
     <script>
+        const INGRESS_PATH = '{{ ingress_path }}';
+
         function showMessage(msg, type) {
             const messageEl = document.getElementById('message');
             messageEl.textContent = msg;
@@ -253,7 +255,7 @@
         }
 
         function refreshData() {
-            fetch('api/devices')
+            fetch(INGRESS_PATH + '/api/devices')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -327,7 +329,7 @@
             btn.disabled = true;
             btn.textContent = '⏳ Sincronizzazione...';
 
-            fetch('api/sync', {
+            fetch(INGRESS_PATH + '/api/sync', {
                 method: 'POST'
             })
                 .then(response => response.json())
@@ -356,13 +358,13 @@
         }
 
         // Load data on page load
-        fetch('api/status')
+        fetch(INGRESS_PATH + '/api/status')
             .then(response => response.json())
             .then(status => {
                 if (!status.configured) {
                     document.getElementById('setupNotice').style.display = 'block';
                     document.getElementById('syncBtn').disabled = true;
-                    window.location.href = '/setup';
+                    window.location.href = INGRESS_PATH + '/setup';
                     return;
                 }
                 refreshData();
