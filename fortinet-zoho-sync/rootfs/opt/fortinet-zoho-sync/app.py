@@ -9,6 +9,7 @@ import json
 import logging
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request
+import requests as http_requests
 from fortinet_sync import FortinetZohoSync
 
 # Setup logging
@@ -33,6 +34,7 @@ sync_manager = None
 OPTIONS_PATH = '/data/options.json'
 USER_CONFIG_PATH = '/data/user_config.json'
 REFRESH_TOKEN_PATH = '/config/zoho_refresh_token.txt'
+ZOHO_TOKENS_PATH = '/config/zoho_tokens.json'
 
 def _load_json(path):
     try:
@@ -171,7 +173,6 @@ def api_setup():
         fortinet_api = payload.get('fortinet_api', {})
         event_cfg = payload.get('event', {})
         technicians = payload.get('technicians', [])
-        refresh_token = payload.get('refresh_token', '').strip()
 
         required = [
             zoho.get('dc'),
@@ -181,7 +182,6 @@ def api_setup():
             zoho.get('app'),
             zoho.get('form'),
             zoho.get('report'),
-            refresh_token
         ]
         if not all(required):
             return jsonify({'success': False, 'error': 'Compila tutti i campi richiesti'}), 400
@@ -221,10 +221,6 @@ def api_setup():
         with open(USER_CONFIG_PATH, 'w') as f:
             json.dump(user_cfg, f, indent=2)
 
-        os.makedirs(os.path.dirname(REFRESH_TOKEN_PATH), exist_ok=True)
-        with open(REFRESH_TOKEN_PATH, 'w') as f:
-            f.write(refresh_token)
-
         with open('/tmp/technicians.json', 'w') as f:
             json.dump(technicians, f)
 
@@ -234,6 +230,76 @@ def api_setup():
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error saving setup: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/zoho/auth-status')
+def api_zoho_auth_status():
+    """Check if Zoho is authorized (refresh token exists)"""
+    authorized = False
+    if os.path.exists(REFRESH_TOKEN_PATH):
+        try:
+            with open(REFRESH_TOKEN_PATH, 'r') as f:
+                if f.read().strip():
+                    authorized = True
+        except Exception:
+            pass
+    return jsonify({'authorized': authorized})
+
+@app.route('/api/zoho/exchange-code', methods=['POST'])
+def api_zoho_exchange_code():
+    """Exchange a Zoho Self Client authorization code for tokens"""
+    try:
+        payload = request.get_json(force=True)
+        code = (payload.get('code') or '').strip()
+        if not code:
+            return jsonify({'success': False, 'error': 'Codice mancante'}), 400
+
+        config = get_config()
+        zoho_cfg = config.get('zoho', {})
+        client_id = zoho_cfg.get('client_id')
+        client_secret = zoho_cfg.get('client_secret')
+        dc = zoho_cfg.get('dc', 'eu')
+
+        if not client_id or not client_secret:
+            return jsonify({'success': False, 'error': 'Salva prima Client ID e Client Secret nella sezione Zoho'}), 400
+
+        token_url = f'https://accounts.zoho.{dc}/oauth/v2/token'
+        resp = http_requests.post(token_url, data={
+            'grant_type': 'authorization_code',
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'code': code,
+        }, timeout=15)
+
+        data = resp.json()
+        if 'error' in data:
+            return jsonify({'success': False, 'error': data.get('error', 'Errore sconosciuto')}), 400
+
+        refresh_token = data.get('refresh_token', '')
+        access_token = data.get('access_token', '')
+
+        if not refresh_token:
+            return jsonify({'success': False, 'error': 'Nessun refresh token ricevuto. Il codice potrebbe essere scaduto o già usato.'}), 400
+
+        os.makedirs(os.path.dirname(REFRESH_TOKEN_PATH), exist_ok=True)
+        with open(REFRESH_TOKEN_PATH, 'w') as f:
+            f.write(refresh_token)
+
+        if access_token:
+            os.makedirs(os.path.dirname(ZOHO_TOKENS_PATH), exist_ok=True)
+            with open(ZOHO_TOKENS_PATH, 'w') as f:
+                json.dump({'access_token': access_token, 'refresh_token': refresh_token}, f)
+
+        global sync_manager
+        sync_manager = None
+
+        logger.info("Zoho OAuth code exchanged successfully")
+        return jsonify({'success': True})
+    except http_requests.exceptions.RequestException as e:
+        logger.error(f"HTTP error exchanging Zoho code: {e}")
+        return jsonify({'success': False, 'error': f'Errore di rete: {e}'}), 500
+    except Exception as e:
+        logger.error(f"Error exchanging Zoho code: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/devices')

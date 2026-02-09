@@ -175,13 +175,24 @@
                     <label for="zoho_report">Report</label>
                     <input id="zoho_report" type="text" placeholder="Nome report">
                 </div>
-                <div>
-                    <label for="zoho_refresh_token">Refresh Token</label>
-                    <input id="zoho_refresh_token" type="password" placeholder="Refresh token Zoho">
-                </div>
             </div>
-            <div class="note" style="margin-top:10px;">
-                Il refresh token viene salvato localmente in /config/zoho_refresh_token.txt.
+        </div>
+
+        <div class="card">
+            <h2>Autorizzazione Zoho</h2>
+            <div id="zohoAuthStatus" style="margin-bottom:14px; padding:10px; border-radius:5px; font-weight:bold;"></div>
+            <div class="note" style="margin-bottom:12px;">
+                <p style="margin-bottom:8px;">Per autorizzare l'accesso a Zoho Creator:</p>
+                <ol style="padding-left:20px; line-height:1.8;">
+                    <li>Vai su <strong>https://api-console.zoho.eu/</strong> e seleziona il tuo Self Client</li>
+                    <li>In <strong>Scope</strong>, incolla: <code style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;">ZohoCreator.form.CREATE,ZohoCreator.report.READ</code></li>
+                    <li>Imposta la durata e clicca <strong>Create</strong></li>
+                    <li>Copia il codice generato e incollalo qui sotto</li>
+                </ol>
+            </div>
+            <div class="row" style="gap:10px;">
+                <input id="zoho_auth_code" type="text" placeholder="Incolla qui il codice di autorizzazione" style="flex:1;">
+                <button type="button" onclick="exchangeZohoCode()">Scambia Codice</button>
             </div>
         </div>
 
@@ -367,7 +378,6 @@
                     form: document.getElementById('zoho_form').value.trim(),
                     report: document.getElementById('zoho_report').value.trim()
                 },
-                refresh_token: document.getElementById('zoho_refresh_token').value.trim(),
                 event: {
                     attivita_interna_id: document.getElementById('attivita_interna_id').value,
                     reparto: document.getElementById('reparto').value.trim(),
@@ -394,10 +404,52 @@
                 .then(r => r.json())
                 .then(res => {
                     if (res.success) {
-                        showMessage('Configurazione salvata. Reindirizzo...', 'success');
-                        setTimeout(() => {
-                            window.location.href = INGRESS_PATH + '/';
-                        }, 1000);
+                        showMessage('Configurazione salvata.', 'success');
+                    } else {
+                        showMessage('Errore: ' + res.error, 'error');
+                    }
+                })
+                .catch(err => {
+                    showMessage('Errore: ' + err, 'error');
+                });
+        }
+
+        function checkZohoAuth() {
+            fetch(INGRESS_PATH + '/api/zoho/auth-status')
+                .then(r => r.json())
+                .then(data => {
+                    const el = document.getElementById('zohoAuthStatus');
+                    if (data.authorized) {
+                        el.textContent = 'Autorizzato';
+                        el.style.background = '#2ed573';
+                        el.style.color = '#1a1a2e';
+                    } else {
+                        el.textContent = 'Non autorizzato';
+                        el.style.background = '#ff4757';
+                        el.style.color = 'white';
+                    }
+                })
+                .catch(() => {});
+        }
+
+        function exchangeZohoCode() {
+            const code = document.getElementById('zoho_auth_code').value.trim();
+            if (!code) {
+                showMessage('Inserisci il codice di autorizzazione', 'error');
+                return;
+            }
+
+            fetch(INGRESS_PATH + '/api/zoho/exchange-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        showMessage('Autorizzazione completata!', 'success');
+                        document.getElementById('zoho_auth_code').value = '';
+                        checkZohoAuth();
                     } else {
                         showMessage('Errore: ' + res.error, 'error');
                     }
@@ -408,6 +460,7 @@
         }
 
         loadConfig();
+        checkZohoAuth();
     </script>
 </body>
 </html>

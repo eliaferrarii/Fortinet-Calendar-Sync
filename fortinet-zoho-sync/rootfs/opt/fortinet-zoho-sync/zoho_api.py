@@ -58,6 +58,13 @@ class ZohoAPI:
         response.raise_for_status()
 
         token_response = response.json()
+
+        if 'error' in token_response:
+            raise Exception(f"Zoho token error: {token_response['error']} - {token_response.get('error_description', '')}")
+
+        if 'access_token' not in token_response:
+            raise Exception(f"Zoho response missing access_token: {json.dumps(token_response)}")
+
         access_token = token_response['access_token']
         expires_in = token_response.get('expires_in', 3600)
 

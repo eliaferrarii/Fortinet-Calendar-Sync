@@ -1,5 +1,5 @@
 name: "Fortinet Zoho Calendar Sync"
-version: "1.0.7"
+version: "1.0.9"
 slug: "fortinet-zoho-sync"
 description: "Sincronizzazione automatica scadenze firewall Fortinet con calendario Zoho"
 url: "https://github.com/eliaferrarii/Fortinet-Calendar-Sync"
