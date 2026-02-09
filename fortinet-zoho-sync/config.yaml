@@ -10,6 +10,7 @@ arch:
   - armv7
   - i386
 init: false
+icon: icon.png
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:firewall
