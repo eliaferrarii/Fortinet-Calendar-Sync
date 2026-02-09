@@ -150,11 +150,10 @@
                 <div class="note" style="margin-bottom:14px;">
                     <p style="margin-bottom:8px;">Per collegare Zoho:</p>
                     <ol style="padding-left:20px; line-height:1.8;">
-                        <li>Vai su <strong>https://api-console.zoho.eu/</strong> e seleziona il tuo <strong>Self Client</strong></li>
-                        <li>Copia <strong>Client ID</strong> e <strong>Client Secret</strong> visibili in alto nella pagina e incollali qui sotto</li>
-                        <li>Clicca <strong>"Salva configurazione"</strong> in fondo alla pagina</li>
-                        <li>Nella tab <strong>Generate Code</strong>, in Scope incolla: <code style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;">ZohoCreator.form.CREATE,ZohoCreator.report.READ</code></li>
-                        <li>Imposta la durata, clicca <strong>Create</strong>, copia il codice generato e incollalo qui sotto</li>
+                        <li>Vai su <strong>https://api-console.zoho.eu/</strong> e crea un <strong>Server-based Application</strong></li>
+                        <li>Come <strong>Redirect URI</strong> registra: <code id="redirectUriDisplay" style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;"></code></li>
+                        <li>Copia <strong>Client ID</strong> e <strong>Client Secret</strong> e incollali qui sotto</li>
+                        <li>Clicca <strong>"Salva configurazione"</strong> e poi <strong>"Autorizza con Zoho"</strong></li>
                     </ol>
                 </div>
 
@@ -179,10 +178,7 @@
                     </div>
                 </div>
 
-                <div class="row" style="gap:10px;">
-                    <input id="zoho_auth_code" type="text" placeholder="Incolla qui il codice generato" style="flex:1;">
-                    <button type="button" onclick="exchangeZohoCode()">Autorizza</button>
-                </div>
+                <button type="button" onclick="startZohoAuth()">Autorizza con Zoho</button>
             </div>
         </div>
 
@@ -472,43 +468,32 @@
                 .catch(err => showMessage('Errore: ' + err, 'error'));
         }
 
-        function exchangeZohoCode() {
-            const code = document.getElementById('zoho_auth_code').value.trim();
-            const client_id = document.getElementById('zoho_client_id').value.trim();
-            const client_secret = document.getElementById('zoho_client_secret').value.trim();
-            const dc = document.getElementById('zoho_dc').value;
-
-            if (!code) {
-                showMessage('Inserisci il codice di autorizzazione', 'error');
-                return;
-            }
-            if (!client_id || !client_secret) {
-                showMessage('Inserisci Client ID e Client Secret prima di autorizzare', 'error');
-                return;
-            }
-
-            fetch(INGRESS_PATH + '/api/zoho/exchange-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code, client_id: client_id, client_secret: client_secret, dc: dc })
-            })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.success) {
-                        showMessage('Autorizzazione completata!', 'success');
-                        document.getElementById('zoho_auth_code').value = '';
-                        checkZohoAuth();
-                    } else {
-                        showMessage('Errore: ' + res.error, 'error');
-                    }
-                })
-                .catch(err => {
-                    showMessage('Errore: ' + err, 'error');
-                });
+        function getRedirectUri() {
+            return window.location.origin + INGRESS_PATH + '/auth/callback';
         }
+
+        function startZohoAuth() {
+            const redirectUri = getRedirectUri();
+            window.location.href = INGRESS_PATH + '/api/zoho/authorize?redirect_uri=' + encodeURIComponent(redirectUri);
+        }
+
+        function checkAuthResult() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('auth_success')) {
+                showMessage('Autorizzazione Zoho completata!', 'success');
+                history.replaceState(null, '', window.location.pathname);
+            } else if (params.get('auth_error')) {
+                showMessage('Errore autorizzazione: ' + params.get('auth_error'), 'error');
+                history.replaceState(null, '', window.location.pathname);
+            }
+        }
+
+        // Show redirect URI to copy into Zoho API Console
+        document.getElementById('redirectUriDisplay').textContent = window.location.origin + INGRESS_PATH + '/auth/callback';
 
         loadConfig();
         checkZohoAuth();
+        checkAuthResult();
     </script>
 </body>
 </html>
