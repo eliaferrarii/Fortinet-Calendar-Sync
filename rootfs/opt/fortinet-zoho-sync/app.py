@@ -116,6 +116,17 @@ def _is_configured(config):
         return False
     return True
 
+def _sanitize_config_for_log(config):
+    try:
+        safe = json.loads(json.dumps(config))
+        if safe.get('zoho'):
+            safe['zoho']['client_secret'] = '***'
+        if safe.get('fortinet_api'):
+            safe['fortinet_api']['password'] = '***'
+        return safe
+    except Exception:
+        return {'error': 'unable to sanitize config'}
+
 @app.route('/')
 def index():
     """Dashboard home page"""
@@ -270,7 +281,7 @@ def api_health():
 
 if __name__ == '__main__':
     logger.info("Starting Fortinet Zoho Sync Add-on")
-    logger.info(f"Configuration: {get_config()}")
+    logger.info(f"Configuration: {_sanitize_config_for_log(get_config())}")
 
     # Initialize sync manager
     try:
