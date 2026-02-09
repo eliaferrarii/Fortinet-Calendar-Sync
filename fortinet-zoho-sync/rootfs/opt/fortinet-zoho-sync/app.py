@@ -7,11 +7,9 @@ Main Flask application
 import os
 import json
 import logging
-import base64
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request, redirect
+from flask import Flask, render_template, jsonify, request
 import requests as http_requests
-from urllib.parse import urlencode
 from fortinet_sync import FortinetZohoSync
 
 # Setup logging
@@ -276,37 +274,26 @@ def api_zoho_logout():
         logger.error(f"Error during Zoho logout: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/auth/callback')
-def auth_callback():
-    """Handle Zoho OAuth callback - opens in new tab"""
-    code = request.args.get('code', '').strip()
-    error = request.args.get('error', '')
-
-    if error:
-        logger.error(f"Zoho OAuth error: {error}")
-        return f"<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Errore: {error}</h2><p>Puoi chiudere questa finestra.</p></body></html>"
-
-    if not code:
-        return "<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Nessun codice ricevuto</h2><p>Puoi chiudere questa finestra.</p></body></html>"
-
+@app.route('/api/zoho/exchange-code', methods=['POST'])
+def api_zoho_exchange_code():
+    """Exchange Zoho Self Client code for tokens"""
     try:
+        payload = request.get_json(force=True)
+        code = (payload.get('code') or '').strip()
+        if not code:
+            return jsonify({'success': False, 'error': 'Codice mancante'}), 400
+
+        # Use credentials from payload first, fall back to saved config
         config = get_config()
         zoho_cfg = config.get('zoho', {})
-        client_id = zoho_cfg.get('client_id', '')
-        client_secret = zoho_cfg.get('client_secret', '')
-        dc = zoho_cfg.get('dc', 'eu')
+        client_id = (payload.get('client_id') or '').strip() or zoho_cfg.get('client_id', '')
+        client_secret = (payload.get('client_secret') or '').strip() or zoho_cfg.get('client_secret', '')
+        dc = (payload.get('dc') or '').strip() or zoho_cfg.get('dc', 'eu')
 
-        # Recover original redirect_uri from state parameter (base64-encoded)
-        state = request.args.get('state', '')
-        if state:
-            try:
-                redirect_uri = base64.b64decode(state).decode('utf-8')
-            except Exception:
-                redirect_uri = request.url.split('?')[0]
-        else:
-            redirect_uri = request.url.split('?')[0]
+        if not client_id or not client_secret:
+            return jsonify({'success': False, 'error': 'Client ID e Client Secret sono obbligatori'}), 400
 
-        logger.info(f"Exchanging Zoho code with dc={dc}, redirect_uri={redirect_uri}")
+        logger.info(f"Exchanging Zoho Self Client code with dc={dc}, client_id={client_id[:8]}...")
 
         token_url = f'https://accounts.zoho.{dc}/oauth/v2/token'
         resp = http_requests.post(token_url, data={
@@ -314,21 +301,24 @@ def auth_callback():
             'client_id': client_id,
             'client_secret': client_secret,
             'code': code,
-            'redirect_uri': redirect_uri,
         }, timeout=15)
 
         data = resp.json()
-        logger.info(f"Zoho token response keys: {list(data.keys())}")
+        logger.info(f"Zoho token response: {json.dumps(data)}")
 
         if 'error' in data:
-            logger.error(f"Zoho token error: {data}")
-            return f"<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Errore: {data.get('error')}</h2><p>Puoi chiudere questa finestra e riprovare.</p></body></html>"
+            error_msg = data.get('error', 'unknown')
+            error_desc = data.get('error_description', '')
+            full_error = f"{error_msg}: {error_desc}" if error_desc else error_msg
+            logger.error(f"Zoho token error: {full_error}")
+            return jsonify({'success': False, 'error': full_error}), 400
 
         refresh_token = data.get('refresh_token', '')
         access_token = data.get('access_token', '')
 
         if not refresh_token:
-            return "<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Nessun refresh token ricevuto</h2><p>Puoi chiudere questa finestra e riprovare.</p></body></html>"
+            logger.error(f"No refresh token in response: {json.dumps(data)}")
+            return jsonify({'success': False, 'error': 'Nessun refresh token ricevuto da Zoho'}), 400
 
         os.makedirs(os.path.dirname(REFRESH_TOKEN_PATH), exist_ok=True)
         with open(REFRESH_TOKEN_PATH, 'w') as f:
@@ -342,11 +332,11 @@ def auth_callback():
         global sync_manager
         sync_manager = None
 
-        logger.info("Zoho OAuth completed successfully")
-        return "<html><body style='background:#1a1a2e;color:#2ed573;font-family:sans-serif;padding:40px;text-align:center;'><h2>Autorizzazione completata!</h2><p>Puoi chiudere questa finestra e tornare al Setup.</p><script>setTimeout(function(){window.close();},3000);</script></body></html>"
+        logger.info("Zoho Self Client code exchanged successfully")
+        return jsonify({'success': True})
     except Exception as e:
-        logger.error(f"Error in OAuth callback: {e}")
-        return f"<html><body style='background:#1a1a2e;color:#ff4757;font-family:sans-serif;padding:40px;text-align:center;'><h2>Errore: {e}</h2><p>Puoi chiudere questa finestra.</p></body></html>"
+        logger.error(f"Error exchanging Zoho code: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/devices')
 def api_devices():
