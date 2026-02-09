@@ -489,7 +489,8 @@
                 scope: scope,
                 redirect_uri: redirectUri,
                 access_type: 'offline',
-                prompt: 'consent'
+                prompt: 'consent',
+                state: btoa(redirectUri)
             });
             const authUrl = 'https://accounts.zoho.' + dc + '/oauth/v2/auth?' + params.toString();
             window.open(authUrl, '_blank');

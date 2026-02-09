@@ -7,6 +7,7 @@ Main Flask application
 import os
 import json
 import logging
+import base64
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, redirect
 import requests as http_requests
@@ -295,8 +296,15 @@ def auth_callback():
         client_secret = zoho_cfg.get('client_secret', '')
         dc = zoho_cfg.get('dc', 'eu')
 
-        # Rebuild redirect_uri from current request URL (without query params)
-        redirect_uri = request.url.split('?')[0]
+        # Recover original redirect_uri from state parameter (base64-encoded)
+        state = request.args.get('state', '')
+        if state:
+            try:
+                redirect_uri = base64.b64decode(state).decode('utf-8')
+            except Exception:
+                redirect_uri = request.url.split('?')[0]
+        else:
+            redirect_uri = request.url.split('?')[0]
 
         logger.info(f"Exchanging Zoho code with dc={dc}, redirect_uri={redirect_uri}")
 
