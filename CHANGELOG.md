@@ -6,6 +6,11 @@
 - Mascheramento credenziali nei log di avvio
 - Pagina Setup per configurazione guidata
 
+## [1.0.2] - 2026-02-09
+
+### Fixed
+- Rimosso `webui` per allineare comportamento ingress a Zoho Calendar
+
 ## [1.0.0] - 2026-02-08
 
 ### Added
