@@ -1,5 +1,5 @@
 name: "Fortinet Zoho Calendar Sync"
-version: "1.0.9"
+version: "1.1.0"
 slug: "fortinet-zoho-sync"
 description: "Sincronizzazione automatica scadenze firewall Fortinet con calendario Zoho"
 url: "https://github.com/eliaferrarii/Fortinet-Calendar-Sync"
@@ -16,54 +16,8 @@ panel_icon: mdi:firewall
 panel_title: "Fortinet Scadenze"
 startup: application
 boot: auto
-options:
-  filter_days_min: 1
-  filter_days_max: 15
-  technicians:
-    - id: "000000000000000000"
-      name: "Tecnico Esempio"
-  zoho_dc: "eu"
-  zoho_client_id: "REPLACE_ME"
-  zoho_client_secret: "REPLACE_ME"
-  zoho_owner: "REPLACE_ME"
-  zoho_app: "REPLACE_ME"
-  zoho_form: "REPLACE_ME"
-  zoho_report: "REPLACE_ME"
-  attivita_interna_id: "REPLACE_ME"
-  reparto: "REPLACE_ME"
-  tipologia: "REPLACE_ME"
-  event_start_time: "08:00"
-  event_end_time: "09:00"
-  ore_pianificate: 1.0
-  fortinet_api_id: ""
-  fortinet_password: ""
-  fortinet_account_id: 0
-  fortinet_client_id: ""
-schema:
-  filter_days_min: int(1,365)
-  filter_days_max: int(1,365)
-  technicians:
-    - id: str
-      name: str
-  zoho_dc: list(eu|com|in|au|jp)?
-  zoho_client_id: str
-  zoho_client_secret: password
-  zoho_owner: str
-  zoho_app: str
-  zoho_form: str
-  zoho_report: str
-  attivita_interna_id: str
-  reparto: str
-  tipologia: str
-  event_start_time: str
-  event_end_time: str
-  ore_pianificate: float
-  fortinet_api_id: str?
-  fortinet_password: password?
-  fortinet_account_id: int?
-  fortinet_client_id: str?
-  fortinet_auth_endpoint: str?
-  fortinet_products_endpoint: str?
+options: {}
+schema: {}
 map:
   - config:rw
 services:

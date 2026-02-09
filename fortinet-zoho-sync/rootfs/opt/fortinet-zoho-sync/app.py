@@ -245,6 +245,23 @@ def api_zoho_auth_status():
             pass
     return jsonify({'authorized': authorized})
 
+@app.route('/api/zoho/logout', methods=['POST'])
+def api_zoho_logout():
+    """Remove Zoho tokens (logout)"""
+    try:
+        for path in [REFRESH_TOKEN_PATH, ZOHO_TOKENS_PATH]:
+            if os.path.exists(path):
+                os.remove(path)
+
+        global sync_manager
+        sync_manager = None
+
+        logger.info("Zoho logout completed")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error during Zoho logout: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/zoho/exchange-code', methods=['POST'])
 def api_zoho_exchange_code():
     """Exchange a Zoho Self Client authorization code for tokens"""

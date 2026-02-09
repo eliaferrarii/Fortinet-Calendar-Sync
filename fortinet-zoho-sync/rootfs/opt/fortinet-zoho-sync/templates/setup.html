@@ -180,19 +180,24 @@
 
         <div class="card">
             <h2>Autorizzazione Zoho</h2>
-            <div id="zohoAuthStatus" style="margin-bottom:14px; padding:10px; border-radius:5px; font-weight:bold;"></div>
-            <div class="note" style="margin-bottom:12px;">
-                <p style="margin-bottom:8px;">Per autorizzare l'accesso a Zoho Creator:</p>
-                <ol style="padding-left:20px; line-height:1.8;">
-                    <li>Vai su <strong>https://api-console.zoho.eu/</strong> e seleziona il tuo Self Client</li>
-                    <li>In <strong>Scope</strong>, incolla: <code style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;">ZohoCreator.form.CREATE,ZohoCreator.report.READ</code></li>
-                    <li>Imposta la durata e clicca <strong>Create</strong></li>
-                    <li>Copia il codice generato e incollalo qui sotto</li>
-                </ol>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                <div id="zohoAuthStatus" style="padding:10px; border-radius:5px; font-weight:bold; flex:1;"></div>
+                <button id="zohoLogoutBtn" type="button" style="display:none; background:#ff4757; color:white;" onclick="zohoLogout()">Disconnetti</button>
             </div>
-            <div class="row" style="gap:10px;">
-                <input id="zoho_auth_code" type="text" placeholder="Incolla qui il codice di autorizzazione" style="flex:1;">
-                <button type="button" onclick="exchangeZohoCode()">Scambia Codice</button>
+            <div id="zohoAuthForm">
+                <div class="note" style="margin-bottom:12px;">
+                    <p style="margin-bottom:8px;">Per autorizzare l'accesso a Zoho Creator:</p>
+                    <ol style="padding-left:20px; line-height:1.8;">
+                        <li>Vai su <strong>https://api-console.zoho.eu/</strong> e seleziona il tuo Self Client</li>
+                        <li>In <strong>Scope</strong>, incolla: <code style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;">ZohoCreator.form.CREATE,ZohoCreator.report.READ</code></li>
+                        <li>Imposta la durata e clicca <strong>Create</strong></li>
+                        <li>Copia il codice generato e incollalo qui sotto</li>
+                    </ol>
+                </div>
+                <div class="row" style="gap:10px;">
+                    <input id="zoho_auth_code" type="text" placeholder="Incolla qui il codice di autorizzazione" style="flex:1;">
+                    <button type="button" onclick="exchangeZohoCode()">Scambia Codice</button>
+                </div>
             </div>
         </div>
 
@@ -419,17 +424,38 @@
                 .then(r => r.json())
                 .then(data => {
                     const el = document.getElementById('zohoAuthStatus');
+                    const logoutBtn = document.getElementById('zohoLogoutBtn');
+                    const authForm = document.getElementById('zohoAuthForm');
                     if (data.authorized) {
                         el.textContent = 'Autorizzato';
                         el.style.background = '#2ed573';
                         el.style.color = '#1a1a2e';
+                        logoutBtn.style.display = 'inline-block';
+                        authForm.style.display = 'none';
                     } else {
                         el.textContent = 'Non autorizzato';
                         el.style.background = '#ff4757';
                         el.style.color = 'white';
+                        logoutBtn.style.display = 'none';
+                        authForm.style.display = 'block';
                     }
                 })
                 .catch(() => {});
+        }
+
+        function zohoLogout() {
+            if (!confirm('Sei sicuro di voler disconnettere Zoho?')) return;
+            fetch(INGRESS_PATH + '/api/zoho/logout', { method: 'POST' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        showMessage('Zoho disconnesso.', 'success');
+                        checkZohoAuth();
+                    } else {
+                        showMessage('Errore: ' + res.error, 'error');
+                    }
+                })
+                .catch(err => showMessage('Errore: ' + err, 'error'));
         }
 
         function exchangeZohoCode() {
