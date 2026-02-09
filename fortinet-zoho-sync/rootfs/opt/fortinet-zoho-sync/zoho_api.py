@@ -183,17 +183,18 @@ ATTENZIONE: Verificare rinnovo contratto!"""
                 }
             }
 
+            logger.info(f"Creating event: {title} on {zoho_date} for technician {technician_id}")
+            logger.debug(f"Event payload: {json.dumps(event_data)}")
+
             response = requests.post(url, headers=headers, json=event_data, timeout=30)
 
-            if response.status_code == 200:
-                result = response.json()
-                if result.get('code') == 3000:
-                    return True
-                else:
-                    logger.error(f"Zoho API error: {result.get('message')}")
-                    return False
+            result = response.json()
+            logger.info(f"Zoho create response (HTTP {response.status_code}): {json.dumps(result)}")
+
+            if response.status_code == 200 and result.get('code') == 3000:
+                return True
             else:
-                logger.error(f"HTTP error {response.status_code}: {response.text}")
+                logger.error(f"Zoho create event failed - code: {result.get('code')}, message: {result.get('message')}, result: {json.dumps(result)}")
                 return False
 
         except Exception as e:
