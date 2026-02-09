@@ -186,17 +186,18 @@ def api_setup():
         if not fortinet_pass or fortinet_pass == '***':
             fortinet_pass = existing_cfg.get('fortinet_api', {}).get('password', '')
 
-        required = [
-            zoho.get('dc'),
-            zoho.get('client_id'),
-            zoho_secret,
-            zoho.get('owner'),
-            zoho.get('app'),
-            zoho.get('form'),
-            zoho.get('report'),
-        ]
-        if not all(required):
-            return jsonify({'success': False, 'error': 'Compila tutti i campi richiesti'}), 400
+        required_fields = {
+            'Data Center': zoho.get('dc'),
+            'Client ID': zoho.get('client_id'),
+            'Client Secret': zoho_secret,
+            'Owner': zoho.get('owner'),
+            'App': zoho.get('app'),
+            'Form': zoho.get('form'),
+            'Report': zoho.get('report'),
+        }
+        missing = [name for name, val in required_fields.items() if not val]
+        if missing:
+            return jsonify({'success': False, 'error': f'Campi mancanti: {", ".join(missing)}'}), 400
 
         user_cfg = {
             'filter_days_min': int(payload.get('filter_days_min', 1)),
@@ -331,6 +332,17 @@ def api_zoho_exchange_code():
 
         global sync_manager
         sync_manager = None
+
+        # Also save credentials to user_config so they persist
+        existing_cfg = _load_json(USER_CONFIG_PATH) or {}
+        if 'zoho' not in existing_cfg:
+            existing_cfg['zoho'] = {}
+        existing_cfg['zoho']['client_id'] = client_id
+        existing_cfg['zoho']['client_secret'] = client_secret
+        existing_cfg['zoho']['dc'] = dc
+        os.makedirs(os.path.dirname(USER_CONFIG_PATH), exist_ok=True)
+        with open(USER_CONFIG_PATH, 'w') as f:
+            json.dump(existing_cfg, f, indent=2)
 
         logger.info("Zoho Self Client code exchanged successfully")
         return jsonify({'success': True})

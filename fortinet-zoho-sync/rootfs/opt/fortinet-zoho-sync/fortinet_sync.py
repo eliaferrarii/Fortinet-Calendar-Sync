@@ -174,7 +174,7 @@ class FortinetZohoSync:
             logger.info(f"Processing {serial} - {len(device_data['services'])} services expiring")
 
             # Check for each technician
-            for technician in self.config['technicians']:
+            for technician in (self.config.get('technicians') or []):
                 # Check if event already exists
                 if self.zoho.check_event_exists(serial, event_date_str, technician['id']):
                     logger.info(f"  Event already exists for {serial} on {event_date_str} - {technician['name']}")
