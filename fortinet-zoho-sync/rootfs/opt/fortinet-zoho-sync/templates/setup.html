@@ -139,7 +139,8 @@
         <div id="message" class="message"></div>
 
         <div class="card">
-            <h2>Zoho</h2>
+            <h2>Zoho - Credenziali API</h2>
+            <div class="note" style="margin-bottom:10px;">Credenziali OAuth dalla <strong>Zoho API Console</strong> (Self Client).</div>
             <div class="grid">
                 <div>
                     <label for="zoho_dc">Data Center</label>
@@ -159,34 +160,18 @@
                     <label for="zoho_client_secret">Client Secret</label>
                     <input id="zoho_client_secret" type="password" placeholder="Client Secret Zoho">
                 </div>
-                <div>
-                    <label for="zoho_owner">Owner</label>
-                    <input id="zoho_owner" type="text" placeholder="Owner Zoho Creator">
-                </div>
-                <div>
-                    <label for="zoho_app">App</label>
-                    <input id="zoho_app" type="text" placeholder="Nome app Zoho Creator">
-                </div>
-                <div>
-                    <label for="zoho_form">Form</label>
-                    <input id="zoho_form" type="text" placeholder="Nome form">
-                </div>
-                <div>
-                    <label for="zoho_report">Report</label>
-                    <input id="zoho_report" type="text" placeholder="Nome report">
-                </div>
             </div>
         </div>
 
         <div class="card">
-            <h2>Autorizzazione Zoho</h2>
+            <h2>Zoho - Autorizzazione</h2>
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
                 <div id="zohoAuthStatus" style="padding:10px; border-radius:5px; font-weight:bold; flex:1;"></div>
                 <button id="zohoLogoutBtn" type="button" style="display:none; background:#ff4757; color:white;" onclick="zohoLogout()">Disconnetti</button>
             </div>
             <div id="zohoAuthForm">
                 <div class="note" style="margin-bottom:12px;">
-                    <p style="margin-bottom:8px;">Per autorizzare l'accesso a Zoho Creator:</p>
+                    <p style="margin-bottom:8px;">Salva prima le credenziali, poi autorizza:</p>
                     <ol style="padding-left:20px; line-height:1.8;">
                         <li>Vai su <strong>https://api-console.zoho.eu/</strong> e seleziona il tuo Self Client</li>
                         <li>In <strong>Scope</strong>, incolla: <code style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;">ZohoCreator.form.CREATE,ZohoCreator.report.READ</code></li>
@@ -197,6 +182,29 @@
                 <div class="row" style="gap:10px;">
                     <input id="zoho_auth_code" type="text" placeholder="Incolla qui il codice di autorizzazione" style="flex:1;">
                     <button type="button" onclick="exchangeZohoCode()">Scambia Codice</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Zoho Creator - Destinazione Eventi</h2>
+            <div class="note" style="margin-bottom:10px;">Dove creare gli eventi in Zoho Creator.</div>
+            <div class="grid">
+                <div>
+                    <label for="zoho_owner">Owner</label>
+                    <input id="zoho_owner" type="text" placeholder="Owner Zoho Creator">
+                </div>
+                <div>
+                    <label for="zoho_app">App</label>
+                    <input id="zoho_app" type="text" placeholder="Nome app Zoho Creator">
+                </div>
+                <div>
+                    <label for="zoho_form">Form</label>
+                    <input id="zoho_form" type="text" placeholder="Nome form (scrittura)">
+                </div>
+                <div>
+                    <label for="zoho_report">Report</label>
+                    <input id="zoho_report" type="text" placeholder="Nome report (lettura)">
                 </div>
             </div>
         </div>
@@ -339,6 +347,9 @@
                     document.getElementById('filter_days_max').value = cfg.filter_days_max || 15;
                     document.getElementById('zoho_dc').value = (cfg.zoho && cfg.zoho.dc) || 'eu';
                     document.getElementById('zoho_client_id').value = (cfg.zoho && cfg.zoho.client_id) || '';
+                    if (cfg.zoho && cfg.zoho.has_client_secret) {
+                        document.getElementById('zoho_client_secret').placeholder = '(gia\u0027 configurato - lascia vuoto per mantenere)';
+                    }
                     document.getElementById('zoho_owner').value = (cfg.zoho && cfg.zoho.owner) || '';
                     document.getElementById('zoho_app').value = (cfg.zoho && cfg.zoho.app) || '';
                     document.getElementById('zoho_form').value = (cfg.zoho && cfg.zoho.form) || '';
@@ -352,6 +363,9 @@
                     document.getElementById('ore_pianificate').value = (cfg.event && cfg.event.ore_pianificate) || 1.0;
 
                     document.getElementById('fortinet_api_id').value = (cfg.fortinet_api && cfg.fortinet_api.api_id) || '';
+                    if (cfg.fortinet_api && cfg.fortinet_api.has_password) {
+                        document.getElementById('fortinet_password').placeholder = '(gia\u0027 configurata - lascia vuoto per mantenere)';
+                    }
                     document.getElementById('fortinet_account_id').value = (cfg.fortinet_api && cfg.fortinet_api.account_id) || '';
                     document.getElementById('fortinet_client_id').value = (cfg.fortinet_api && cfg.fortinet_api.client_id) || '';
                     document.getElementById('fortinet_auth_endpoint').value = (cfg.fortinet_api && cfg.fortinet_api.auth_endpoint) || '';

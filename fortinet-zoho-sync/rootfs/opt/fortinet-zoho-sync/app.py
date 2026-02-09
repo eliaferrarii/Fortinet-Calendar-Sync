@@ -149,8 +149,11 @@ def setup():
 def api_config():
     """Get current configuration"""
     config = get_config()
-    # Remove sensitive data
-    config['zoho']['client_secret'] = '***'
+    # Flag and mask sensitive data
+    config['zoho']['has_client_secret'] = bool(config['zoho'].get('client_secret'))
+    config['zoho']['client_secret'] = ''
+    config['fortinet_api']['has_password'] = bool(config['fortinet_api'].get('password'))
+    config['fortinet_api']['password'] = ''
     return jsonify(config)
 
 @app.route('/api/status')
@@ -174,10 +177,19 @@ def api_setup():
         event_cfg = payload.get('event', {})
         technicians = payload.get('technicians', [])
 
+        # Preserve secrets if not re-entered
+        existing_cfg = _load_json(USER_CONFIG_PATH) or {}
+        zoho_secret = zoho.get('client_secret', '').strip()
+        if not zoho_secret or zoho_secret == '***':
+            zoho_secret = existing_cfg.get('zoho', {}).get('client_secret', '')
+        fortinet_pass = fortinet_api.get('password', '').strip()
+        if not fortinet_pass or fortinet_pass == '***':
+            fortinet_pass = existing_cfg.get('fortinet_api', {}).get('password', '')
+
         required = [
             zoho.get('dc'),
             zoho.get('client_id'),
-            zoho.get('client_secret'),
+            zoho_secret,
             zoho.get('owner'),
             zoho.get('app'),
             zoho.get('form'),
@@ -193,7 +205,7 @@ def api_setup():
             'zoho': {
                 'dc': zoho.get('dc'),
                 'client_id': zoho.get('client_id'),
-                'client_secret': zoho.get('client_secret'),
+                'client_secret': zoho_secret,
                 'owner': zoho.get('owner'),
                 'app': zoho.get('app'),
                 'form': zoho.get('form'),
@@ -201,7 +213,7 @@ def api_setup():
             },
             'fortinet_api': {
                 'api_id': fortinet_api.get('api_id', ''),
-                'password': fortinet_api.get('password', ''),
+                'password': fortinet_pass,
                 'account_id': fortinet_api.get('account_id', ''),
                 'client_id': fortinet_api.get('client_id', ''),
                 'auth_endpoint': fortinet_api.get('auth_endpoint', ''),
