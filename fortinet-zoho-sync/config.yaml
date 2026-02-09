@@ -1,5 +1,5 @@
 name: "Fortinet Zoho Calendar Sync"
-version: "1.0.4"
+version: "1.0.5"
 slug: "fortinet-zoho-sync"
 description: "Sincronizzazione automatica scadenze firewall Fortinet con calendario Zoho"
 url: "https://github.com/eliaferrarii/Fortinet-Calendar-Sync"
@@ -10,8 +10,7 @@ arch:
   - armv7
   - i386
 init: false
-ingress: true
-ingress_port: 8099
+ingress: false
 panel_icon: mdi:firewall
 panel_title: "Fortinet Scadenze"
 startup: application
@@ -68,3 +67,6 @@ map:
   - config:rw
 services:
   - mqtt:want
+ports:
+  8099/tcp: 8099
+webui: "http://[HOST]:[PORT:8099]"

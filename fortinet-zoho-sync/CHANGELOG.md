@@ -1,11 +1,12 @@
 # Changelog
 
-## [1.0.4] - 2026-02-09
+## [1.0.5] - 2026-02-09
 
 ### Fixed
 - Repository structure aligned to standard add-on layout
 - Removed `webui` to avoid ingress URL issues
 - Slug aligned with folder name to avoid ingress token issues
+- Disabled ingress and exposed port 8099 with direct Web UI
 
 ## [1.0.0] - 2026-02-08
 
