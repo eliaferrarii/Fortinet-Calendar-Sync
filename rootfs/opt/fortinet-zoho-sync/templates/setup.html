@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Fortinet Zoho Sync</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #16213e;
+        }
+
+        h1 {
+            color: #00d9ff;
+            font-size: 1.8em;
+        }
+
+        .card {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-bottom: 12px;
+            color: #00d9ff;
+            font-size: 1.1em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85em;
+            color: #bbb;
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #223;
+            background: #0f1626;
+            color: #eee;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            background: #00d9ff;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #00b8d9;
+            transform: translateY(-2px);
+        }
+
+        button.secondary {
+            background: #2d3a5a;
+            color: #eee;
+        }
+
+        .message {
+            display: none;
+            padding: 12px 14px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .success {
+            background: #2ed573;
+            color: #1a1a2e;
+        }
+
+        .error {
+            background: #ff4757;
+            color: white;
+        }
+
+        .note {
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        .tech-list {
+            display: grid;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Setup Fortinet Zoho Sync</h1>
+            <div>
+                <button class="secondary" onclick="window.location.href='/'">Torna alla Dashboard</button>
+            </div>
+        </header>
+
+        <div id="message" class="message"></div>
+
+        <div class="card">
+            <h2>Zoho</h2>
+            <div class="grid">
+                <div>
+                    <label for="zoho_dc">Data Center</label>
+                    <select id="zoho_dc">
+                        <option value="eu">eu</option>
+                        <option value="com">com</option>
+                        <option value="in">in</option>
+                        <option value="au">au</option>
+                        <option value="jp">jp</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="zoho_client_id">Client ID</label>
+                    <input id="zoho_client_id" type="text" placeholder="Client ID Zoho">
+                </div>
+                <div>
+                    <label for="zoho_client_secret">Client Secret</label>
+                    <input id="zoho_client_secret" type="password" placeholder="Client Secret Zoho">
+                </div>
+                <div>
+                    <label for="zoho_owner">Owner</label>
+                    <input id="zoho_owner" type="text" placeholder="Owner Zoho Creator">
+                </div>
+                <div>
+                    <label for="zoho_app">App</label>
+                    <input id="zoho_app" type="text" placeholder="Nome app Zoho Creator">
+                </div>
+                <div>
+                    <label for="zoho_form">Form</label>
+                    <input id="zoho_form" type="text" placeholder="Nome form">
+                </div>
+                <div>
+                    <label for="zoho_report">Report</label>
+                    <input id="zoho_report" type="text" placeholder="Nome report">
+                </div>
+                <div>
+                    <label for="zoho_refresh_token">Refresh Token</label>
+                    <input id="zoho_refresh_token" type="password" placeholder="Refresh token Zoho">
+                </div>
+            </div>
+            <div class="note" style="margin-top:10px;">
+                Il refresh token viene salvato localmente in /config/zoho_refresh_token.txt.
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Filtri e Tecnici</h2>
+            <div class="grid">
+                <div>
+                    <label for="filter_days_min">Giorni min</label>
+                    <input id="filter_days_min" type="number" min="1" max="365" value="1">
+                </div>
+                <div>
+                    <label for="filter_days_max">Giorni max</label>
+                    <input id="filter_days_max" type="number" min="1" max="365" value="15">
+                </div>
+            </div>
+
+            <div style="margin-top:14px;">
+                <div class="row" style="margin-bottom:8px;">
+                    <strong>Tecnici</strong>
+                    <button class="secondary" type="button" onclick="addTechRow()">Aggiungi tecnico</button>
+                </div>
+                <div id="techList" class="tech-list"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Eventi</h2>
+            <div class="grid">
+                <div>
+                    <label for="attivita_interna_id">Attivita Interna ID</label>
+                    <input id="attivita_interna_id" type="number" value="0">
+                </div>
+                <div>
+                    <label for="reparto">Reparto</label>
+                    <input id="reparto" type="text" placeholder="Reparto">
+                </div>
+                <div>
+                    <label for="tipologia">Tipologia</label>
+                    <input id="tipologia" type="text" placeholder="Tipologia">
+                </div>
+                <div>
+                    <label for="event_start_time">Ora inizio</label>
+                    <input id="event_start_time" type="text" value="08:00">
+                </div>
+                <div>
+                    <label for="event_end_time">Ora fine</label>
+                    <input id="event_end_time" type="text" value="09:00">
+                </div>
+                <div>
+                    <label for="ore_pianificate">Ore pianificate</label>
+                    <input id="ore_pianificate" type="number" step="0.1" value="1.0">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Fortinet API (opzionale)</h2>
+            <div class="grid">
+                <div>
+                    <label for="fortinet_api_id">API ID</label>
+                    <input id="fortinet_api_id" type="text">
+                </div>
+                <div>
+                    <label for="fortinet_password">Password</label>
+                    <input id="fortinet_password" type="password">
+                </div>
+                <div>
+                    <label for="fortinet_account_id">Account ID</label>
+                    <input id="fortinet_account_id" type="number">
+                </div>
+                <div>
+                    <label for="fortinet_client_id">Client ID</label>
+                    <input id="fortinet_client_id" type="text">
+                </div>
+                <div>
+                    <label for="fortinet_auth_endpoint">Auth Endpoint</label>
+                    <input id="fortinet_auth_endpoint" type="text">
+                </div>
+                <div>
+                    <label for="fortinet_products_endpoint">Products Endpoint</label>
+                    <input id="fortinet_products_endpoint" type="text">
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="justify-content: flex-end;">
+            <button onclick="saveSetup()">Salva configurazione</button>
+        </div>
+    </div>
+
+    <script>
+        function showMessage(msg, type) {
+            const el = document.getElementById('message');
+            el.textContent = msg;
+            el.className = 'message ' + type;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
+        }
+
+        function techRow(idValue, nameValue) {
+            const row = document.createElement('div');
+            row.className = 'row';
+            row.innerHTML = `
+                <input type="text" class="tech-id" placeholder="ID tecnico" value="${idValue || ''}">
+                <input type="text" class="tech-name" placeholder="Nome tecnico" value="${nameValue || ''}">
+                <button class="secondary" type="button">Rimuovi</button>
+            `;
+            row.querySelector('button').onclick = () => row.remove();
+            return row;
+        }
+
+        function addTechRow(idValue, nameValue) {
+            const list = document.getElementById('techList');
+            list.appendChild(techRow(idValue, nameValue));
+        }
+
+        function collectTechnicians() {
+            const rows = document.querySelectorAll('#techList .row');
+            const techs = [];
+            rows.forEach(row => {
+                const id = row.querySelector('.tech-id').value.trim();
+                const name = row.querySelector('.tech-name').value.trim();
+                if (id && name) {
+                    techs.push({ id: id, name: name });
+                }
+            });
+            return techs;
+        }
+
+        function loadConfig() {
+            fetch('/api/config')
+                .then(r => r.json())
+                .then(cfg => {
+                    document.getElementById('filter_days_min').value = cfg.filter_days_min || 1;
+                    document.getElementById('filter_days_max').value = cfg.filter_days_max || 15;
+                    document.getElementById('zoho_dc').value = (cfg.zoho && cfg.zoho.dc) || 'eu';
+                    document.getElementById('zoho_client_id').value = (cfg.zoho && cfg.zoho.client_id) || '';
+                    document.getElementById('zoho_owner').value = (cfg.zoho && cfg.zoho.owner) || '';
+                    document.getElementById('zoho_app').value = (cfg.zoho && cfg.zoho.app) || '';
+                    document.getElementById('zoho_form').value = (cfg.zoho && cfg.zoho.form) || '';
+                    document.getElementById('zoho_report').value = (cfg.zoho && cfg.zoho.report) || '';
+
+                    document.getElementById('attivita_interna_id').value = (cfg.event && cfg.event.attivita_interna_id) || 0;
+                    document.getElementById('reparto').value = (cfg.event && cfg.event.reparto) || '';
+                    document.getElementById('tipologia').value = (cfg.event && cfg.event.tipologia) || '';
+                    document.getElementById('event_start_time').value = (cfg.event && cfg.event.start_time) || '08:00';
+                    document.getElementById('event_end_time').value = (cfg.event && cfg.event.end_time) || '09:00';
+                    document.getElementById('ore_pianificate').value = (cfg.event && cfg.event.ore_pianificate) || 1.0;
+
+                    document.getElementById('fortinet_api_id').value = (cfg.fortinet_api && cfg.fortinet_api.api_id) || '';
+                    document.getElementById('fortinet_account_id').value = (cfg.fortinet_api && cfg.fortinet_api.account_id) || '';
+                    document.getElementById('fortinet_client_id').value = (cfg.fortinet_api && cfg.fortinet_api.client_id) || '';
+                    document.getElementById('fortinet_auth_endpoint').value = (cfg.fortinet_api && cfg.fortinet_api.auth_endpoint) || '';
+                    document.getElementById('fortinet_products_endpoint').value = (cfg.fortinet_api && cfg.fortinet_api.products_endpoint) || '';
+
+                    const techs = cfg.technicians || [];
+                    if (techs.length === 0) {
+                        addTechRow('', '');
+                    } else {
+                        techs.forEach(t => addTechRow(t.id, t.name));
+                    }
+                })
+                .catch(() => {
+                    addTechRow('', '');
+                });
+        }
+
+        function saveSetup() {
+            const payload = {
+                filter_days_min: document.getElementById('filter_days_min').value,
+                filter_days_max: document.getElementById('filter_days_max').value,
+                technicians: collectTechnicians(),
+                zoho: {
+                    dc: document.getElementById('zoho_dc').value,
+                    client_id: document.getElementById('zoho_client_id').value.trim(),
+                    client_secret: document.getElementById('zoho_client_secret').value.trim(),
+                    owner: document.getElementById('zoho_owner').value.trim(),
+                    app: document.getElementById('zoho_app').value.trim(),
+                    form: document.getElementById('zoho_form').value.trim(),
+                    report: document.getElementById('zoho_report').value.trim()
+                },
+                refresh_token: document.getElementById('zoho_refresh_token').value.trim(),
+                event: {
+                    attivita_interna_id: document.getElementById('attivita_interna_id').value,
+                    reparto: document.getElementById('reparto').value.trim(),
+                    tipologia: document.getElementById('tipologia').value.trim(),
+                    start_time: document.getElementById('event_start_time').value.trim(),
+                    end_time: document.getElementById('event_end_time').value.trim(),
+                    ore_pianificate: document.getElementById('ore_pianificate').value
+                },
+                fortinet_api: {
+                    api_id: document.getElementById('fortinet_api_id').value.trim(),
+                    password: document.getElementById('fortinet_password').value.trim(),
+                    account_id: document.getElementById('fortinet_account_id').value,
+                    client_id: document.getElementById('fortinet_client_id').value.trim(),
+                    auth_endpoint: document.getElementById('fortinet_auth_endpoint').value.trim(),
+                    products_endpoint: document.getElementById('fortinet_products_endpoint').value.trim()
+                }
+            };
+
+            fetch('/api/setup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        showMessage('Configurazione salvata. Reindirizzo...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    } else {
+                        showMessage('Errore: ' + res.error, 'error');
+                    }
+                })
+                .catch(err => {
+                    showMessage('Errore: ' + err, 'error');
+                });
+        }
+
+        loadConfig();
+    </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "assets": [
+    {
+      "serialNumber": "FGT60FTK2109B1AL",
+      "productModel": "FortiGate 60F",
+      "description": "Firewall sede principale",
+      "entitlements": [
+        {
+          "typeDesc": "FortiGuard Security",
+          "levelDesc": "Premium",
+          "endDate": "2026-02-24T00:00:00"
+        },
+        {
+          "typeDesc": "FortiCare Support",
+          "levelDesc": "Premium",
+          "endDate": "2026-02-24T00:00:00"
+        }
+      ]
+    },
+    {
+      "serialNumber": "FGT80FTK24002200",
+      "productModel": "FortiGate 80F",
+      "description": "Firewall sede secondaria",
+      "entitlements": [
+        {
+          "typeDesc": "FortiGuard Security",
+          "levelDesc": "Enterprise",
+          "endDate": "2026-02-15T00:00:00"
+        }
+      ]
+    }
+  ]
+}
