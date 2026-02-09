@@ -151,13 +151,17 @@
                     <p style="margin-bottom:8px;">Per collegare Zoho:</p>
                     <ol style="padding-left:20px; line-height:1.8;">
                         <li>Vai su <strong>https://api-console.zoho.eu/</strong> e crea un <strong>Server-based Application</strong></li>
-                        <li>Come <strong>Redirect URI</strong> registra: <code id="redirectUriDisplay" style="background:#0f1626; padding:2px 6px; border-radius:3px; user-select:all;"></code></li>
+                        <li>Come <strong>Redirect URI</strong> registra l'URL qui sotto (modificalo se serve)</li>
                         <li>Copia <strong>Client ID</strong> e <strong>Client Secret</strong> e incollali qui sotto</li>
                         <li>Clicca <strong>"Salva configurazione"</strong> e poi <strong>"Autorizza con Zoho"</strong></li>
                     </ol>
                 </div>
 
                 <div class="grid" style="margin-bottom:14px;">
+                    <div style="grid-column: 1 / -1;">
+                        <label for="zoho_redirect_uri">Redirect URI (da registrare su Zoho)</label>
+                        <input id="zoho_redirect_uri" type="text" placeholder="http://IP-HOME-ASSISTANT:8099/auth/callback">
+                    </div>
                     <div>
                         <label for="zoho_dc">Data Center</label>
                         <select id="zoho_dc">
@@ -468,20 +472,20 @@
                 .catch(err => showMessage('Errore: ' + err, 'error'));
         }
 
-        function getRedirectUri() {
-            return window.location.origin + INGRESS_PATH + '/auth/callback';
-        }
-
         function startZohoAuth() {
             const clientId = document.getElementById('zoho_client_id').value.trim();
             const dc = document.getElementById('zoho_dc').value;
+            const redirectUri = document.getElementById('zoho_redirect_uri').value.trim();
 
             if (!clientId) {
                 showMessage('Inserisci il Client ID prima di autorizzare', 'error');
                 return;
             }
+            if (!redirectUri) {
+                showMessage('Inserisci il Redirect URI', 'error');
+                return;
+            }
 
-            const redirectUri = getRedirectUri();
             const scope = 'ZohoCreator.form.CREATE,ZohoCreator.report.READ';
             const params = new URLSearchParams({
                 response_type: 'code',
@@ -513,8 +517,8 @@
             setTimeout(() => clearInterval(poll), 300000);
         }
 
-        // Show redirect URI to copy into Zoho API Console
-        document.getElementById('redirectUriDisplay').textContent = window.location.origin + INGRESS_PATH + '/auth/callback';
+        // Set default redirect URI based on hostname + direct port
+        document.getElementById('zoho_redirect_uri').value = window.location.protocol + '//' + window.location.hostname + ':8099/auth/callback';
 
         loadConfig();
         checkZohoAuth();
