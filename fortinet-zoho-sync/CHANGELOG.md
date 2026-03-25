@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.11] - 2026-03-25
+
+### Fixed
+- Se Zoho rifiuta `LkpAttivitaInterna`, la creazione evento viene ritentata senza quel lookup
+- Se il report Zoho mostra gia' tanti eventi quanti sono i tecnici configurati, la sync evita nuove creazioni duplicate
+
 ## [1.1.10] - 2026-03-25
 
 ### Fixed

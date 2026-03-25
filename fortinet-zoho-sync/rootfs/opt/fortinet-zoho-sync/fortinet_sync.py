@@ -183,7 +183,8 @@ class FortinetZohoSync:
                     event_date_str,
                     technician['id'],
                     self.config['event'],
-                    allow_technician_fallback=allow_technician_fallback
+                    allow_technician_fallback=allow_technician_fallback,
+                    expected_candidate_count=len(technicians)
                 ):
                     logger.info(f"  Event already exists for {serial} on {event_date_str} - {technician['name']}")
                     skipped += 1

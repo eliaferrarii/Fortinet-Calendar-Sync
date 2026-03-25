@@ -128,7 +128,8 @@ class ZohoAPI:
 
         return result.get('data', [])
 
-    def check_event_exists(self, serial, event_date_str, technician_id, event_config, allow_technician_fallback=False):
+    def check_event_exists(self, serial, event_date_str, technician_id, event_config,
+                           allow_technician_fallback=False, expected_candidate_count=None):
         """Check if event already exists in Zoho Calendar."""
         try:
             access_token = self.get_access_token()
@@ -182,6 +183,13 @@ class ZohoAPI:
                     )
                     return True
 
+            if expected_candidate_count and len(candidates) >= expected_candidate_count:
+                logger.info(
+                    f"Existing events already cover all configured technicians for {serial} on {zoho_date} "
+                    f"(candidates={len(candidates)}, expected={expected_candidate_count})"
+                )
+                return True
+
             logger.info(
                 f"No existing event matched for {serial} on {zoho_date} "
                 f"(technician={technician_id}, candidates={len(candidates)})"
@@ -228,20 +236,23 @@ ATTENZIONE: Verificare rinnovo contratto!"""
                 'Content-Type': 'application/json'
             }
 
-            event_data = {
-                "data": {
-                    "Data": zoho_date,
-                    "DataInizio": start_datetime,
-                    "DataFine": end_datetime,
-                    "Titolo": title,
-                    "DescrizioneAttivita": description,
-                    "Tipologia": event_config['tipologia'],
-                    "OrePianificate": event_config['ore_pianificate'],
-                    "LkpTecnico": technician_id,
-                    "LkpAttivitaInterna": event_config['attivita_interna_id'],
-                    "Reparto": event_config['reparto']
-                }
+            payload = {
+                "Data": zoho_date,
+                "DataInizio": start_datetime,
+                "DataFine": end_datetime,
+                "Titolo": title,
+                "DescrizioneAttivita": description,
+                "Tipologia": event_config['tipologia'],
+                "OrePianificate": event_config['ore_pianificate'],
+                "LkpTecnico": technician_id,
+                "Reparto": event_config['reparto']
             }
+
+            attivita_interna_id = event_config.get('attivita_interna_id')
+            if attivita_interna_id not in (None, '', 0, '0'):
+                payload["LkpAttivitaInterna"] = attivita_interna_id
+
+            event_data = {"data": payload}
 
             logger.info(f"Creating event: {title} on {zoho_date} for technician {technician_id}")
             logger.debug(f"Event payload: {json.dumps(event_data)}")
@@ -253,9 +264,32 @@ ATTENZIONE: Verificare rinnovo contratto!"""
 
             if response.status_code == 200 and result.get('code') == 3000:
                 return True
-            else:
-                logger.error(f"Zoho create event failed - code: {result.get('code')}, message: {result.get('message')}, result: {json.dumps(result)}")
-                return False
+
+            error_text = json.dumps(result)
+            if payload.get("LkpAttivitaInterna") and "Invalid column value" in error_text:
+                retry_payload = dict(payload)
+                invalid_value = retry_payload.pop("LkpAttivitaInterna", None)
+                logger.warning(
+                    f"Zoho rejected LkpAttivitaInterna={invalid_value}; retrying create without that field"
+                )
+
+                retry_event_data = {"data": retry_payload}
+                retry_response = requests.post(url, headers=headers, json=retry_event_data, timeout=30)
+                retry_result = retry_response.json()
+                logger.info(
+                    f"Zoho create retry response (HTTP {retry_response.status_code}): {json.dumps(retry_result)}"
+                )
+
+                if retry_response.status_code == 200 and retry_result.get('code') == 3000:
+                    return True
+
+                result = retry_result
+
+            logger.error(
+                f"Zoho create event failed - code: {result.get('code')}, "
+                f"message: {result.get('message')}, result: {json.dumps(result)}"
+            )
+            return False
 
         except Exception as e:
             logger.error(f"Error creating event: {e}")
