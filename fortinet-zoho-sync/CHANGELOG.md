@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.9] - 2026-03-25
+
+### Fixed
+- Corretto il rilevamento dei duplicati sul calendario Zoho
+- Normalizzato il confronto di data, ora e tecnico per evitare creazioni ripetute degli stessi eventi
+- Allineato il controllo duplicati allo slot orario configurato invece di usare un valore fisso
+
 ## [1.0.6] - 2026-02-09
 
 ### Fixed
