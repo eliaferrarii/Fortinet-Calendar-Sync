@@ -348,33 +348,6 @@ ATTENZIONE: Verificare rinnovo contratto!"""
                 )
                 return True
 
-            error_text = json.dumps(result)
-            if payload.get("LkpAttivitaInterna") and "Invalid column value" in error_text:
-                retry_payload = dict(payload)
-                invalid_value = retry_payload.pop("LkpAttivitaInterna", None)
-                logger.warning(
-                    f"Zoho rejected LkpAttivitaInterna={invalid_value}; retrying create without that field"
-                )
-
-                retry_event_data = {"data": retry_payload}
-                retry_response = requests.post(url, headers=headers, json=retry_event_data, timeout=30)
-                retry_result = retry_response.json()
-                logger.info(
-                    f"Zoho create retry response (HTTP {retry_response.status_code}): {json.dumps(retry_result)}"
-                )
-
-                if retry_response.status_code == 200 and retry_result.get('code') == 3000:
-                    self._register_event(
-                        device_data['serial'],
-                        event_date_str,
-                        technician_id,
-                        'zoho_create_retry',
-                        retry_result.get('data', {}).get('ID')
-                    )
-                    return True
-
-                result = retry_result
-
             logger.error(
                 f"Zoho create event failed - code: {result.get('code')}, "
                 f"message: {result.get('message')}, result: {json.dumps(result)}"

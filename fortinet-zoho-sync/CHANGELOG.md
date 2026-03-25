@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.16] - 2026-03-25
+
+### Fixed
+- Rimosso ogni fallback che modificava o rimuoveva `LkpAttivitaInterna` durante la creazione evento
+
 ## [1.1.15] - 2026-03-25
 
 ### Changed
