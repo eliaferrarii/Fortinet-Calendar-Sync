@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.13] - 2026-03-25
+
+### Fixed
+- Deduplica resa conservativa: se esiste gia' un evento per lo stesso seriale nella stessa data, la sync non ne crea altri
+
 ## [1.1.12] - 2026-03-25
 
 ### Fixed

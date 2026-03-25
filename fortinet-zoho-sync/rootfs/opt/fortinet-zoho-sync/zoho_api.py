@@ -175,6 +175,13 @@ class ZohoAPI:
                 same_technician = str(event_tecnico_id) == str(technician_id)
                 fallback_match = allow_technician_fallback and not event_tecnico_id
 
+                if same_date:
+                    logger.info(
+                        f"Existing event found for {serial} on {zoho_date}; "
+                        f"skipping creation conservatively to avoid duplicates"
+                    )
+                    return True
+
                 if same_date and same_slot and (same_technician or fallback_match):
                     logger.info(
                         f"Existing event matched for {serial} on {zoho_date} "
