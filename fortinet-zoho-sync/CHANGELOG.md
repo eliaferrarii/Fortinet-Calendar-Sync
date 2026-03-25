@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.17] - 2026-03-25
+
+### Fixed
+- All'avvio l'add-on non ricarica piu' i vecchi campi evento piatti da `/data/options.json`, evitando che `Attivita Interna ID` torni a un valore stale dopo un update
+
 ## [1.1.16] - 2026-03-25
 
 ### Fixed

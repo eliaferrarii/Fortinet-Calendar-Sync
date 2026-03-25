@@ -19,12 +19,14 @@ if [ -f "$CONFIG_PATH" ]; then
     export ZOHO_APP=$(jq -r '.zoho_app // "REPLACE_ME"' $CONFIG_PATH)
     export ZOHO_FORM=$(jq -r '.zoho_form // "Pianificazione"' $CONFIG_PATH)
     export ZOHO_REPORT=$(jq -r '.zoho_report // "CalendarioPianificazione"' $CONFIG_PATH)
-    export ATTIVITA_INTERNA_ID=$(jq -r '.attivita_interna_id // 0' $CONFIG_PATH)
-    export REPARTO=$(jq -r '.reparto // "REPLACE_ME"' $CONFIG_PATH)
-    export TIPOLOGIA=$(jq -r '.tipologia // "Altre attività"' $CONFIG_PATH)
-    export EVENT_START_TIME=$(jq -r '.event_start_time // "08:00"' $CONFIG_PATH)
-    export EVENT_END_TIME=$(jq -r '.event_end_time // "09:00"' $CONFIG_PATH)
-    export ORE_PIANIFICATE=$(jq -r '.ore_pianificate // 1.0' $CONFIG_PATH)
+    # Event fields are persisted by the app in /config. Avoid reloading stale
+    # flat supervisor values here during startup after add-on updates.
+    export ATTIVITA_INTERNA_ID=0
+    export REPARTO="REPLACE_ME"
+    export TIPOLOGIA="REPLACE_ME"
+    export EVENT_START_TIME="08:00"
+    export EVENT_END_TIME="09:00"
+    export ORE_PIANIFICATE=1.0
     export FORTINET_API_ID=$(jq -r '.fortinet_api_id // ""' $CONFIG_PATH)
     export FORTINET_PASSWORD=$(jq -r '.fortinet_password // ""' $CONFIG_PATH)
     export FORTINET_ACCOUNT_ID=$(jq -r '.fortinet_account_id // ""' $CONFIG_PATH)
