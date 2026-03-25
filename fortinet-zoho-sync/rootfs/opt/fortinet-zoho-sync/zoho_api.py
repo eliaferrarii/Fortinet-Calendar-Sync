@@ -20,7 +20,52 @@ class ZohoAPI:
         self.dc = zoho_config['dc']
         self.api_base = f"https://creator.zoho.{self.dc}/api/v2.1"
         self.token_path = '/config/zoho_tokens.json'
+        self.registry_path = '/config/fortinet_zoho_event_registry.json'
         self.access_token = None
+
+    def _load_registry(self):
+        """Load local event registry used to prevent duplicate creations."""
+        if not os.path.exists(self.registry_path):
+            return {}
+        try:
+            with open(self.registry_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+        except Exception as e:
+            logger.warning(f"Error reading event registry: {e}")
+            return {}
+
+    def _save_registry(self, registry):
+        """Persist local event registry."""
+        try:
+            os.makedirs(os.path.dirname(self.registry_path), exist_ok=True)
+            with open(self.registry_path, 'w', encoding='utf-8') as f:
+                json.dump(registry, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Error saving event registry: {e}")
+
+    def _event_key(self, serial, event_date_str, technician_id):
+        """Build stable registry key for a calendar event."""
+        return f"{serial}|{event_date_str}|{technician_id}"
+
+    def _is_registered(self, serial, event_date_str, technician_id):
+        """Check local registry before relying on Zoho lookup."""
+        registry = self._load_registry()
+        return self._event_key(serial, event_date_str, technician_id) in registry
+
+    def _register_event(self, serial, event_date_str, technician_id, source, zoho_id=None):
+        """Record an event in the local registry."""
+        registry = self._load_registry()
+        key = self._event_key(serial, event_date_str, technician_id)
+        registry[key] = {
+            'serial': serial,
+            'event_date': event_date_str,
+            'technician_id': str(technician_id),
+            'source': source,
+            'zoho_id': str(zoho_id) if zoho_id not in (None, '') else '',
+            'updated_at': datetime.now().isoformat()
+        }
+        self._save_registry(registry)
 
     def get_access_token(self):
         """Get or refresh Zoho access token"""
@@ -132,6 +177,13 @@ class ZohoAPI:
                            allow_technician_fallback=False, expected_candidate_count=None):
         """Check if event already exists in Zoho Calendar."""
         try:
+            if self._is_registered(serial, event_date_str, technician_id):
+                logger.info(
+                    f"Existing event found in local registry for {serial} on {event_date_str} "
+                    f"(technician={technician_id})"
+                )
+                return True
+
             access_token = self.get_access_token()
 
             # Convert date to DD/MM/YYYY format
@@ -176,6 +228,7 @@ class ZohoAPI:
                 fallback_match = allow_technician_fallback and not event_tecnico_id
 
                 if same_date:
+                    self._register_event(serial, event_date_str, technician_id, 'zoho_lookup')
                     logger.info(
                         f"Existing event found for {serial} on {zoho_date}; "
                         f"skipping creation conservatively to avoid duplicates"
@@ -183,6 +236,7 @@ class ZohoAPI:
                     return True
 
                 if same_date and same_slot and (same_technician or fallback_match):
+                    self._register_event(serial, event_date_str, technician_id, 'zoho_lookup')
                     logger.info(
                         f"Existing event matched for {serial} on {zoho_date} "
                         f"(technician={technician_id}, found={event_tecnico_id or 'missing'}, "
@@ -191,6 +245,7 @@ class ZohoAPI:
                     return True
 
             if expected_candidate_count and len(candidates) >= expected_candidate_count:
+                self._register_event(serial, event_date_str, technician_id, 'zoho_lookup')
                 logger.info(
                     f"Existing events already cover all configured technicians for {serial} on {zoho_date} "
                     f"(candidates={len(candidates)}, expected={expected_candidate_count})"
@@ -270,6 +325,13 @@ ATTENZIONE: Verificare rinnovo contratto!"""
             logger.info(f"Zoho create response (HTTP {response.status_code}): {json.dumps(result)}")
 
             if response.status_code == 200 and result.get('code') == 3000:
+                self._register_event(
+                    device_data['serial'],
+                    event_date_str,
+                    technician_id,
+                    'zoho_create',
+                    result.get('data', {}).get('ID')
+                )
                 return True
 
             error_text = json.dumps(result)
@@ -288,6 +350,13 @@ ATTENZIONE: Verificare rinnovo contratto!"""
                 )
 
                 if retry_response.status_code == 200 and retry_result.get('code') == 3000:
+                    self._register_event(
+                        device_data['serial'],
+                        event_date_str,
+                        technician_id,
+                        'zoho_create_retry',
+                        retry_result.get('data', {}).get('ID')
+                    )
                     return True
 
                 result = retry_result

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.14] - 2026-03-25
+
+### Fixed
+- Aggiunto un registro locale persistente degli eventi gia' creati o rilevati per bloccare duplicati anche quando la ricerca Zoho fallisce con HTTP 400
+
 ## [1.1.13] - 2026-03-25
 
 ### Fixed
