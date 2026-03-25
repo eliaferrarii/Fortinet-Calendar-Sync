@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.10] - 2026-03-25
+
+### Fixed
+- Rafforzato il controllo duplicati con una seconda ricerca Zoho di fallback per titolo e seriale
+- Aggiunti log espliciti sul numero di candidati trovati e sul motivo del match o mancato match
+- Abilitato un fallback sicuro sul tecnico quando in configurazione c'è un solo tecnico ma Zoho non restituisce il lookup ID
+
 ## [1.1.9] - 2026-03-25
 
 ### Fixed

@@ -166,6 +166,8 @@ class FortinetZohoSync:
         created = 0
         skipped = 0
         failed = 0
+        technicians = self.config.get('technicians') or []
+        allow_technician_fallback = len(technicians) == 1
 
         for device_data in devices:
             serial = device_data['serial']
@@ -174,9 +176,15 @@ class FortinetZohoSync:
             logger.info(f"Processing {serial} - {len(device_data['services'])} services expiring")
 
             # Check for each technician
-            for technician in (self.config.get('technicians') or []):
+            for technician in technicians:
                 # Check if event already exists
-                if self.zoho.check_event_exists(serial, event_date_str, technician['id'], self.config['event']):
+                if self.zoho.check_event_exists(
+                    serial,
+                    event_date_str,
+                    technician['id'],
+                    self.config['event'],
+                    allow_technician_fallback=allow_technician_fallback
+                ):
                     logger.info(f"  Event already exists for {serial} on {event_date_str} - {technician['name']}")
                     skipped += 1
                 else:

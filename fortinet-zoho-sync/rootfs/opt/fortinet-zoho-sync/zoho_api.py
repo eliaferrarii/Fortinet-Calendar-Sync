@@ -112,8 +112,24 @@ class ZohoAPI:
             return parts[0], parts[1][:5]
         return text, ''
 
-    def check_event_exists(self, serial, event_date_str, technician_id, event_config):
-        """Check if event already exists in Zoho Calendar"""
+    def _fetch_events(self, headers, criteria):
+        """Fetch candidate events from the configured Zoho report."""
+        url = f"{self.api_base}/{self.config['owner']}/{self.config['app']}/report/{self.config['report']}"
+        response = requests.get(url, headers=headers, params={'criteria': criteria}, timeout=30)
+
+        if response.status_code != 200:
+            logger.warning(f"Zoho event lookup failed (HTTP {response.status_code}) for criteria: {criteria}")
+            return []
+
+        result = response.json()
+        if result.get('code') != 3000:
+            logger.warning(f"Zoho event lookup returned code {result.get('code')} for criteria: {criteria}")
+            return []
+
+        return result.get('data', [])
+
+    def check_event_exists(self, serial, event_date_str, technician_id, event_config, allow_technician_fallback=False):
+        """Check if event already exists in Zoho Calendar."""
         try:
             access_token = self.get_access_token()
 
@@ -123,52 +139,53 @@ class ZohoAPI:
             expected_start = event_config['start_time'][:5]
             expected_end = event_config['end_time'][:5]
 
-            url = f"{self.api_base}/{self.config['owner']}/{self.config['app']}/report/{self.config['report']}"
-
             headers = {
                 'Authorization': f'Zoho-oauthtoken {access_token}',
                 'Content-Type': 'application/json'
             }
 
-            # Search for existing event
-            criteria = f"Data = '{zoho_date}' && Titolo.contains(\"Scadenza\") && Titolo.contains(\"{serial}\")"
+            criteria_list = [
+                f"Data = '{zoho_date}' && Titolo.contains(\"Scadenza\") && Titolo.contains(\"{serial}\")",
+                f"Titolo.contains(\"Scadenza\") && Titolo.contains(\"{serial}\")"
+            ]
 
-            params = {'criteria': criteria}
+            candidates = []
+            for criteria in criteria_list:
+                fetched = self._fetch_events(headers, criteria)
+                if fetched:
+                    candidates = fetched
+                    logger.info(f"Zoho duplicate lookup found {len(candidates)} candidate(s) with criteria: {criteria}")
+                    break
 
-            response = requests.get(url, headers=headers, params=params, timeout=30)
+            for event in candidates:
+                event_tecnico_id = (
+                    self._extract_lookup_id(event.get('LkpTecnico')) or
+                    self._extract_lookup_id(event.get('LkpTecnico.ID')) or
+                    self._extract_lookup_id(event.get('LkpTecnico_calfield')) or
+                    self._extract_lookup_id(event.get('LkpTecnico_ID'))
+                )
 
-            if response.status_code == 200:
-                result = response.json()
-                if result.get('code') == 3000:
-                    data = result.get('data', [])
+                start_date, start_time = self._extract_date_and_time(event.get('DataInizio'))
+                end_date, end_time = self._extract_date_and_time(event.get('DataFine'))
+                data_date, _ = self._extract_date_and_time(event.get('Data'))
 
-                    # Verify it matches our criteria
-                    for event in data:
-                        event_tecnico_id = (
-                            self._extract_lookup_id(event.get('LkpTecnico')) or
-                            self._extract_lookup_id(event.get('LkpTecnico.ID')) or
-                            self._extract_lookup_id(event.get('LkpTecnico_calfield')) or
-                            self._extract_lookup_id(event.get('LkpTecnico_ID'))
-                        )
+                same_date = zoho_date in {start_date, end_date, data_date}
+                same_slot = start_time == expected_start and end_time == expected_end
+                same_technician = str(event_tecnico_id) == str(technician_id)
+                fallback_match = allow_technician_fallback and not event_tecnico_id
 
-                        start_date, start_time = self._extract_date_and_time(event.get('DataInizio'))
-                        end_date, end_time = self._extract_date_and_time(event.get('DataFine'))
-                        data_date, _ = self._extract_date_and_time(event.get('Data'))
+                if same_date and same_slot and (same_technician or fallback_match):
+                    logger.info(
+                        f"Existing event matched for {serial} on {zoho_date} "
+                        f"(technician={technician_id}, found={event_tecnico_id or 'missing'}, "
+                        f"slot={expected_start}-{expected_end})"
+                    )
+                    return True
 
-                        same_date = zoho_date in {start_date, end_date, data_date}
-                        same_slot = start_time == expected_start and end_time == expected_end
-
-                        if (str(event_tecnico_id) == str(technician_id) and
-                            same_date and
-                            same_slot):
-                            logger.info(
-                                f"Existing event matched for {serial} on {zoho_date} "
-                                f"(technician={technician_id}, slot={expected_start}-{expected_end})"
-                            )
-                            return True
-
-                    return False
-
+            logger.info(
+                f"No existing event matched for {serial} on {zoho_date} "
+                f"(technician={technician_id}, candidates={len(candidates)})"
+            )
             return False
 
         except Exception as e:
