@@ -168,7 +168,7 @@ Un evento è considerato duplicato se:
 1. Data uguale (`Data = 'DD/MM/YYYY'`)
 2. Titolo contiene "Scadenza" E il seriale
 3. Tecnico assegnato corretto (`LkpTecnico = ID`)
-4. Orario 08:00-09:00 (`DataInizio = '08:00'`, `DataFine = '09:00'`)
+4. Slot orario uguale a quello configurato, anche se Zoho restituisce `DataInizio` e `DataFine` come data+ora complete
 
 Tutti e 4 i criteri devono essere soddisfatti.
 

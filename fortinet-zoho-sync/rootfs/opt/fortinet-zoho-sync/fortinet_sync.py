@@ -176,7 +176,7 @@ class FortinetZohoSync:
             # Check for each technician
             for technician in (self.config.get('technicians') or []):
                 # Check if event already exists
-                if self.zoho.check_event_exists(serial, event_date_str, technician['id']):
+                if self.zoho.check_event_exists(serial, event_date_str, technician['id'], self.config['event']):
                     logger.info(f"  Event already exists for {serial} on {event_date_str} - {technician['name']}")
                     skipped += 1
                 else:

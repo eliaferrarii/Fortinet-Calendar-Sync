@@ -80,7 +80,39 @@ class ZohoAPI:
         logger.info("Access token refreshed successfully")
         return access_token
 
-    def check_event_exists(self, serial, event_date_str, technician_id):
+    def _extract_lookup_id(self, value):
+        """Extract Zoho lookup ID from different response formats."""
+        if isinstance(value, dict):
+            for key in ('ID', 'id', 'zc_display_value'):
+                candidate = value.get(key)
+                if candidate not in (None, ''):
+                    return str(candidate)
+            return ''
+        if value in (None, ''):
+            return ''
+        return str(value)
+
+    def _extract_date_and_time(self, value):
+        """Normalize Zoho date/datetime fields to comparable values."""
+        if value in (None, ''):
+            return '', ''
+
+        text = str(value).strip()
+        for fmt in ('%d/%m/%Y %H:%M', '%d/%m/%Y', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+            try:
+                parsed = datetime.strptime(text, fmt)
+                date_value = parsed.strftime('%d/%m/%Y')
+                time_value = parsed.strftime('%H:%M') if 'H:%M' in fmt else ''
+                return date_value, time_value
+            except ValueError:
+                continue
+
+        parts = text.split()
+        if len(parts) >= 2:
+            return parts[0], parts[1][:5]
+        return text, ''
+
+    def check_event_exists(self, serial, event_date_str, technician_id, event_config):
         """Check if event already exists in Zoho Calendar"""
         try:
             access_token = self.get_access_token()
@@ -88,6 +120,8 @@ class ZohoAPI:
             # Convert date to DD/MM/YYYY format
             date_obj = datetime.strptime(event_date_str, '%Y-%m-%d')
             zoho_date = date_obj.strftime('%d/%m/%Y')
+            expected_start = event_config['start_time'][:5]
+            expected_end = event_config['end_time'][:5]
 
             url = f"{self.api_base}/{self.config['owner']}/{self.config['app']}/report/{self.config['report']}"
 
@@ -110,18 +144,27 @@ class ZohoAPI:
 
                     # Verify it matches our criteria
                     for event in data:
-                        tecnico = event.get('LkpTecnico', {})
-                        if isinstance(tecnico, dict):
-                            event_tecnico_id = tecnico.get('ID', '')
-                        else:
-                            event_tecnico_id = event.get('LkpTecnico_calfield', '')
+                        event_tecnico_id = (
+                            self._extract_lookup_id(event.get('LkpTecnico')) or
+                            self._extract_lookup_id(event.get('LkpTecnico.ID')) or
+                            self._extract_lookup_id(event.get('LkpTecnico_calfield')) or
+                            self._extract_lookup_id(event.get('LkpTecnico_ID'))
+                        )
 
-                        start_time = event.get('DataInizio', '')
-                        end_time = event.get('DataFine', '')
+                        start_date, start_time = self._extract_date_and_time(event.get('DataInizio'))
+                        end_date, end_time = self._extract_date_and_time(event.get('DataFine'))
+                        data_date, _ = self._extract_date_and_time(event.get('Data'))
+
+                        same_date = zoho_date in {start_date, end_date, data_date}
+                        same_slot = start_time == expected_start and end_time == expected_end
 
                         if (str(event_tecnico_id) == str(technician_id) and
-                            start_time == '08:00' and
-                            end_time == '09:00'):
+                            same_date and
+                            same_slot):
+                            logger.info(
+                                f"Existing event matched for {serial} on {zoho_date} "
+                                f"(technician={technician_id}, slot={expected_start}-{expected_end})"
+                            )
                             return True
 
                     return False
