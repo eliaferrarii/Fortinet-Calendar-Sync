@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.15] - 2026-03-25
+
+### Changed
+- Il registro locale anti-duplicati mantiene solo gli eventi da oggi ai prossimi 30 giorni
+
 ## [1.1.14] - 2026-03-25
 
 ### Fixed

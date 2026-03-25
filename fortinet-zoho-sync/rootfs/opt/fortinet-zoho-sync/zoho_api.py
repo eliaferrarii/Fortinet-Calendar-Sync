@@ -7,7 +7,7 @@ import requests
 import logging
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,23 @@ class ZohoAPI:
     def _save_registry(self, registry):
         """Persist local event registry."""
         try:
+            today = datetime.now().date()
+            max_date = today + timedelta(days=30)
+            filtered_registry = {}
+
+            for key, value in registry.items():
+                event_date_str = value.get('event_date', '')
+                try:
+                    event_date = datetime.strptime(event_date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    continue
+
+                if today <= event_date <= max_date:
+                    filtered_registry[key] = value
+
             os.makedirs(os.path.dirname(self.registry_path), exist_ok=True)
             with open(self.registry_path, 'w', encoding='utf-8') as f:
-                json.dump(registry, f, indent=2)
+                json.dump(filtered_registry, f, indent=2)
         except Exception as e:
             logger.warning(f"Error saving event registry: {e}")
 
