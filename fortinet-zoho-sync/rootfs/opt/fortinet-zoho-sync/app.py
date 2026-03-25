@@ -32,7 +32,8 @@ def inject_ingress_path():
 # Initialize sync manager
 sync_manager = None
 OPTIONS_PATH = '/data/options.json'
-USER_CONFIG_PATH = '/data/user_config.json'
+USER_CONFIG_PATH = '/config/fortinet_zoho_sync_user_config.json'
+LEGACY_USER_CONFIG_PATH = '/data/user_config.json'
 REFRESH_TOKEN_PATH = '/config/zoho_refresh_token.txt'
 ZOHO_TOKENS_PATH = '/config/zoho_tokens.json'
 
@@ -44,6 +45,16 @@ def _load_json(path):
     except Exception as e:
         logger.warning(f"Error reading JSON from {path}: {e}")
     return None
+
+def _load_user_config():
+    """Load persisted user config, preferring the update-safe /config path."""
+    return _load_json(USER_CONFIG_PATH) or _load_json(LEGACY_USER_CONFIG_PATH) or {}
+
+def _save_user_config(config):
+    """Persist user config to the update-safe /config path."""
+    os.makedirs(os.path.dirname(USER_CONFIG_PATH), exist_ok=True)
+    with open(USER_CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=2)
 
 def _deep_merge(base, updates):
     if not isinstance(updates, dict):
@@ -95,7 +106,7 @@ def get_config():
     }
 
     options_cfg = _load_json(OPTIONS_PATH) or {}
-    user_cfg = _load_json(USER_CONFIG_PATH) or {}
+    user_cfg = _load_user_config()
 
     config = _deep_merge(defaults, options_cfg)
     config = _deep_merge(config, user_cfg)
@@ -178,7 +189,7 @@ def api_setup():
         technicians = payload.get('technicians', [])
 
         # Preserve secrets if not re-entered
-        existing_cfg = _load_json(USER_CONFIG_PATH) or {}
+        existing_cfg = _load_user_config()
         zoho_secret = zoho.get('client_secret', '').strip()
         if not zoho_secret or zoho_secret == '***':
             zoho_secret = existing_cfg.get('zoho', {}).get('client_secret', '')
@@ -230,9 +241,7 @@ def api_setup():
             }
         }
 
-        os.makedirs(os.path.dirname(USER_CONFIG_PATH), exist_ok=True)
-        with open(USER_CONFIG_PATH, 'w') as f:
-            json.dump(user_cfg, f, indent=2)
+        _save_user_config(user_cfg)
 
         with open('/tmp/technicians.json', 'w') as f:
             json.dump(technicians, f)
@@ -334,15 +343,13 @@ def api_zoho_exchange_code():
         sync_manager = None
 
         # Also save credentials to user_config so they persist
-        existing_cfg = _load_json(USER_CONFIG_PATH) or {}
+        existing_cfg = _load_user_config()
         if 'zoho' not in existing_cfg:
             existing_cfg['zoho'] = {}
         existing_cfg['zoho']['client_id'] = client_id
         existing_cfg['zoho']['client_secret'] = client_secret
         existing_cfg['zoho']['dc'] = dc
-        os.makedirs(os.path.dirname(USER_CONFIG_PATH), exist_ok=True)
-        with open(USER_CONFIG_PATH, 'w') as f:
-            json.dump(existing_cfg, f, indent=2)
+        _save_user_config(existing_cfg)
 
         logger.info("Zoho Self Client code exchanged successfully")
         return jsonify({'success': True})

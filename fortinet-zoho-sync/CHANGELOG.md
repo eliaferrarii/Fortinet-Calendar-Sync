@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.12] - 2026-03-25
+
+### Fixed
+- Spostata la configurazione utente persistita su `/config/fortinet_zoho_sync_user_config.json` per evitare reset dopo update dell'add-on
+- Mantenuta compatibilita' con il vecchio file legacy in `/data/user_config.json`
+
 ## [1.1.11] - 2026-03-25
 
 ### Fixed
